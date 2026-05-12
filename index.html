@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#2d5a1b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pajiști">
+<link rel="manifest" href="manifest.json">
+<title>Amenajament Pastoral</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="topbar">
+  <h1>🌿 <span>Pajiști</span> — Amenajament Pastoral</h1>
+  <span id="offline-badge">OFFLINE</span>
+</div>
+
+<div id="tabs">
+  <button class="tab-btn active" onclick="showTab('specii')" id="tab-specii">
+    <span class="icon">🌱</span>Specii
+  </button>
+  <button class="tab-btn" onclick="showTab('uvm')" id="tab-uvm">
+    <span class="icon">🐄</span>UVM
+  </button>
+  <button class="tab-btn" onclick="showTab('fise')" id="tab-fise">
+    <span class="icon">📋</span>Fișe
+  </button>
+</div>
+
+<div id="main">
+
+  <!-- ========== SPECII PAGE ========== -->
+  <div class="page active" id="page-specii">
+    <div class="section-header">🔍 Identificare Specii (cod din Excel)</div>
+    <div class="search-box">
+      <input type="search" id="search-specii" placeholder="Caută după cod, nume științific sau popular..." oninput="filterSpecii()">
+    </div>
+
+    <div id="specii-list"></div>
+  </div>
+
+  <!-- ========== UVM PAGE ========== -->
+  <div class="page" id="page-uvm">
+    <div class="section-header">🐄 Calculator Capacitate Pășunat</div>
+    <div class="uvm-container">
+
+      <div id="uvm-result" class="uvm-result" style="display:none"></div>
+
+      <div class="uvm-card">
+        <label>Tip Tehnologic (T)</label>
+        <div class="tip-grid" id="tip-grid"></div>
+      </div>
+
+      <div class="uvm-row">
+        <div class="uvm-card">
+          <label>Suprafață (ha)</label>
+          <input type="number" id="uvm-sup" placeholder="ex: 45.5" step="0.1" min="0" oninput="calcUVM()">
+        </div>
+        <div class="uvm-card">
+          <label>Zile pășunat / an</label>
+          <input type="number" id="uvm-zile" placeholder="ex: 180" value="180" min="1" max="365" oninput="calcUVM()">
+        </div>
+      </div>
+
+      <div class="uvm-card">
+        <label>Valoare pastorală</label>
+        <select id="uvm-val" onchange="calcUVM()">
+          <option value="1">Bună (coef. 1.0)</option>
+          <option value="0.75" selected>Mijlocie (coef. 0.75)</option>
+          <option value="0.5">Slabă (coef. 0.5)</option>
+        </select>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========== FISE PAGE ========== -->
+  <div class="page" id="page-fise">
+    <div id="fise-list-view">
+      <div class="section-header">📋 Fișe Descriere Parcelară</div>
+      <div class="fise-container">
+                <button class="fisa-btn" onclick="exportDocx()" style="border-color:#8b4513;background:#fff8f0">
+          <span class="fb-icon">📄</span>
+          <span class="fb-text">
+            <div class="fb-title" style="color:#8b4513">Exportă fișe .docx</div>
+            <div class="fb-sub">2 fișe A6 pe coală A4 · tăiabil</div>
+          </span>
+          <span class="fb-arr" style="color:#8b4513">↓</span>
+        </button>
+        <button class="fisa-btn" onclick="newFisa()" style="border-color:var(--green-bright);background:var(--green-pale)">
+          <span class="fb-icon">➕</span>
+          <span class="fb-text">
+            <div class="fb-title">Fișă nouă</div>
+            <div class="fb-sub">Parcelă / unitate amenajistică nouă</div>
+          </span>
+          <span class="fb-arr">›</span>
+        </button>
+        <div id="fise-saved"></div>
+      </div>
+    </div>
+
+    <div id="fisa-form-page">
+      <div class="fisa-form-header">
+        <button class="back-btn" onclick="closeFisa()">‹</button>
+        <h2 id="fisa-form-title">Fișă nouă</h2>
+        <button class="save-btn" onclick="saveFisa()">💾 Salvează</button>
+      </div>
+      <div id="fisa-form-content"></div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- Camera / PlantNet Modal -->
+<div id="camera-modal">
+  <div class="cam-card">
+    <div class="modal-handle"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-family:var(--font-mono);font-size:12px;color:var(--green-mid);text-transform:uppercase;letter-spacing:0.08em">📷 Identificare plantă — PlantNet</div>
+      <button onclick="closeCameraModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888">✕</button>
+    </div>
+    <img id="cam-preview" class="cam-preview">
+    <div id="cam-status"></div>
+    <div id="cam-loading">⏳ Se identifică planta...</div>
+    <div id="cam-results"></div>
+    <input type="file" id="cam-input" accept="image/*" capture="environment" style="display:none" onchange="handleCamPhoto(this)">
+    <button class="cam-btn cam-btn-primary" onclick="document.getElementById('cam-input').click()">📷 Fă poză / Alege din galerie</button>
+    <button class="cam-btn cam-btn-secondary" onclick="closeCameraModal()">Anulează</button>
+  </div>
+</div>
+
+<!-- Plant detail modal -->
+<div id="plant-modal" onclick="closePlantModal(event)">
+  <div class="modal-card" id="modal-card">
+    <div class="modal-handle"></div>
+    <div id="modal-body"></div>
+    <button class="modal-close" onclick="closePlantModal()">Închide</button>
+  </div>
+</div>
+
+<!-- Species picker for fisa -->
+<div id="species-picker" onclick="closeSpeciesPicker(event)">
+  <div class="sp-card">
+    <div class="sp-header">
+      <h3 id="sp-title">Adaugă specie</h3>
+      <button class="sp-close" onclick="closeSpeciesPicker()">✕</button>
+    </div>
+    <div class="sp-search">
+      <input type="search" id="sp-search" placeholder="Caută specia..." oninput="filterSpPicker()">
+    </div>
+    <div class="sp-list" id="sp-list"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+
+<!-- Service Worker registration -->
+<script src="docx.iife.js"></script>
+
+<script src="export.js"></script>
+<script src="plantnet.js"></script>
+<script src="sw-register.js"></script>
+
+
+
+</body>
+</html>
