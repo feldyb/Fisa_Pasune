@@ -10,6 +10,23 @@
 <link rel="manifest" href="manifest.json">
 <title>Amenajament Pastoral</title>
 <link rel="stylesheet" href="style.css">
+<style>
+#pi-arboret-modal { display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,0.6); align-items:flex-end; }
+#pi-arboret-modal.open { display:flex; }
+.pia-card { background:#fdf8f0; width:100%; border-radius:16px 16px 0 0; max-height:88dvh; overflow-y:auto; }
+.pia-header { background:#4a3010; color:#fdf8f0; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; border-radius:16px 16px 0 0; }
+.pia-header h3 { font-family:var(--font-mono); font-size:13px; letter-spacing:.06em; text-transform:uppercase; }
+.pia-close { background:none; border:none; color:#fdf8f0; font-size:22px; cursor:pointer; }
+.pia-grid { display:grid; grid-template-columns:1fr 1fr; gap:0; }
+.pia-field { padding:10px 14px; border-bottom:1px solid #e8dcc8; }
+.pia-field.full { grid-column:1/-1; }
+.pia-field label { display:block; font-family:var(--font-mono); font-size:10px; color:#8b5a2b; text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px; }
+.pia-field input { width:100%; border:1.5px solid #c8a87a; border-radius:6px; padding:9px 10px; font-size:16px; background:#fff8f0; color:#2a1a08; outline:none; }
+.pia-field input:focus { border-color:#8b5a2b; }
+.pia-actions { padding:14px 16px 32px; display:flex; gap:10px; }
+.pia-btn-save { flex:1; background:#4a3010; color:white; border:none; border-radius:8px; padding:13px; font-family:var(--font-mono); font-size:14px; cursor:pointer; }
+.pia-btn-cancel { background:#e8dcc8; color:#4a3010; border:none; border-radius:8px; padding:13px 20px; font-family:var(--font-mono); font-size:14px; cursor:pointer; }
+</style>
 </head>
 <body>
 
@@ -169,6 +186,64 @@
 <script src="sw-register.js"></script>
 
 
+
+
+<!-- PI Arboret Modal -->
+<div id="pi-arboret-modal" onclick="if(event.target===this)closePiArboretModal()">
+  <div class="pia-card">
+    <div class="pia-header">
+      <h3 id="pia-modal-title">&#127795; Adaugă element arboret</h3>
+      <button class="pia-close" onclick="closePiArboretModal()">✕</button>
+    </div>
+    <input type="hidden" id="pia-edit-idx">
+    <div class="pia-grid">
+      <div class="pia-field full">
+        <label>Elem. arb. (specia)</label>
+        <input id="pia-elem" type="text" placeholder="ex: MO, FA, DM, PAM">
+      </div>
+      <div class="pia-field">
+        <label>Prp. %</label>
+        <input id="pia-prp" type="number" min="0" max="10" placeholder="ex: 5">
+      </div>
+      <div class="pia-field">
+        <label>Cons.</label>
+        <input id="pia-cons" type="text" placeholder="ex: 0.8">
+      </div>
+      <div class="pia-field">
+        <label>Vârstă (ani)</label>
+        <input id="pia-varsta" type="number" min="0" placeholder="ex: 60">
+      </div>
+      <div class="pia-field">
+        <label>D (cm)</label>
+        <input id="pia-d" type="number" min="0" placeholder="ex: 24">
+      </div>
+      <div class="pia-field">
+        <label>H (m)</label>
+        <input id="pia-h" type="number" min="0" step="0.1" placeholder="ex: 18">
+      </div>
+      <div class="pia-field">
+        <label>Prov.</label>
+        <input id="pia-prov" type="text" placeholder="ex: S, SN">
+      </div>
+      <div class="pia-field">
+        <label>CLP</label>
+        <input id="pia-clp" type="text" placeholder="ex: I, II">
+      </div>
+      <div class="pia-field">
+        <label>Volum ha (m³)</label>
+        <input id="pia-volha" type="number" min="0" placeholder="ex: 120">
+      </div>
+      <div class="pia-field">
+        <label>Volum Total (m³)</label>
+        <input id="pia-voltotal" type="number" min="0" placeholder="ex: 1440">
+      </div>
+    </div>
+    <div class="pia-actions">
+      <button class="pia-btn-cancel" onclick="closePiArboretModal()">Anulează</button>
+      <button class="pia-btn-save" onclick="savePiArboretEntry()">&#10003; Salvează element</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
