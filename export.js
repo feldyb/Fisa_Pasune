@@ -122,38 +122,9 @@ async function buildDocx(fise) {
     ]}));
 
     // Helper: build 2 rows for a species category
-    // Row1: Label | total% | specii (3 per rand, perechi cod+%) | 
-    // Row2: empty | empty  | continuare specii
     function specRows(label, total, specii, isTox) {
-      // Build pairs: [{cod, pct}, ...]
-      // We have 6 middle cols: split as c[3],c[4],c[5],c[6],c[7],c[8]
-      // Use as 3 pairs of (cod text col, pct col)
-      // col widths for pairs: [c[3]+c[4], c[5]+c[6], c[7]+c[8]]
       const pairW = [c[3]+c[4], c[5]+c[6], c[7]+c[8]];
       
-      function pairCells(startIdx) {
-        const cells = [];
-        for(let pi=0; pi<3; pi++) {
-          const sp = specii[startIdx+pi];
-          if(sp) {
-            // Split pair width: ~65% name, 35% pct
-            const w = pairW[pi];
-            const wName = Math.round(w*0.65);
-            const wPct = w - wName;
-            cells.push(cell(wName, sp.cod+'', {sz:14, it:true}));
-            cells.push(cell(wPct, sp.pct+'%', {sz:14, center:true}));
-          } else {
-            cells.push(eCell(pairW[pi], {span:2}));
-          }
-        }
-        return cells;
-      }
-
-      // Note: pairCells returns 3 items (each spanning or 2 cols)
-      // Actually we need to handle the column widths carefully
-      // Simpler: use the 6 middle cols as individual cells
-      // c[3]=850, c[4]=950, c[5]=950, c[6]=950, c[7]=750, c[8]=950
-      // Use as: sp1name | sp1% | sp2name | sp2% | sp3name | sp3%
       function sixCells(startIdx) {
         const s = specii;
         const slots = [
@@ -232,7 +203,7 @@ async function buildDocx(fise) {
     const lr = Array.isArray(f.lucrari)&&f.lucrari.length ? f.lucrari.map(l=>typeof l==='object'?`${l.cod}(${l.pct||''}%)`:`${l}`).join('  ') : '';
     const eroz = Array.isArray(f.eroziune)&&f.eroziune.length ? f.eroziune.join(' ') : '';
 
-        // Lucr. exec.
+    // Lucr. exec.
     rows.push(new TableRow({height:{value:360,rule:'exact'}, children:[
       cell(c[0]+c[1],'Lucr. exec.',{span:2,sz:15}),
       cell(c[2]+c[3]+c[4]+c[5]+c[6]+c[7]+c[8],lrExec,{span:7,sz:14}),
@@ -259,8 +230,7 @@ async function buildDocx(fise) {
                   new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Cons',{sz:15,bold:true})]})]}),
       new TableCell({borders:brd,width:{size:c[3],type:WidthType.DXA},margins:padSm,verticalAlign:VerticalAlign.CENTER,rowSpan:2,
         children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Vârst',{sz:15,bold:true})]}),
-                  new Paragraph({alignment:AlignmentType.CENTER,children:[tx('a',{sz:15,bold:true})]}),
-                  new Paragraph({alignment:AlignmentType.CENTER,children:[tx('ani',{sz:15,bold:true})]})]}),
+                  new Paragraph({alignment:AlignmentType.CENTER,children:[tx('a',{sz:15,bold:true})]})]}),
       new TableCell({borders:brd,width:{size:c[4],type:WidthType.DXA},margins:padSm,verticalAlign:VerticalAlign.CENTER,rowSpan:2,
         children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('D',{sz:15,bold:true})]}),
                   new Paragraph({alignment:AlignmentType.CENTER,children:[tx('cm',{sz:15,bold:true})]})]}),
@@ -286,29 +256,12 @@ async function buildDocx(fise) {
 
     const mainTable = new Table({ width:{size:PW,type:WidthType.DXA}, columnWidths:c, rows });
 
-    // Tabel vegetatie forestiera (doar pentru pășune împădurită)
-    if (f.catFolos === 'Pășune împădurită') {
-      const PW2 = PW;
-      // Coloane tabel PI: Label | Value (2 col layout)
-      const cp = [3200, 7772]; // label | value, sum=10972... adjust
-      // Use same PW
-      const cp2 = [3500, PW-3500];
+    // Tabel suplimentar exclusiv pentru Pășune împădurită
+    if (f.catFolos === 'Pășune împădurită' || f.catFolos === 'Păşune împădurită') {
       const brdP = { top: bk, bottom: bk, left: bk, right: bk };
-
-      function piH(text, w) {
-        return new TableCell({ borders:brdP, width:{size:w,type:WidthType.DXA},
-          margins:padSm, verticalAlign:VerticalAlign.CENTER,
-          children:[new Paragraph({children:[tx(text,{sz:15,bold:true})]})] });
-      }
-      function piD(w, val, o={}) {
-        return new TableCell({ borders:brdP, width:{size:w,type:WidthType.DXA},
-          margins:pad, verticalAlign:VerticalAlign.CENTER, columnSpan:o.span||1,
-          children:[new Paragraph({children:[tx(val||'',{sz:15})]})] });
-      }
-
       const piRows = [];
 
-      // Header
+      // Header tabel secundar
       piRows.push(new TableRow({ children:[
         new TableCell({ borders:brdP, width:{size:PW,type:WidthType.DXA},
           columnSpan:4, margins:padSm,
@@ -318,30 +271,14 @@ async function buildDocx(fise) {
         })
       ]}));
 
-      // 4 col layout: label|val|label|val
-      const c4 = [2200, 3286, 2200, 3286]; // sum=10972? check: 2200+3286+2200+3286=10972, PW=10772, diff=200
-      const c4f = [2200, 3186, 2200, 3186]; // sum=10772 ✓
+      const c4f = [2200, 3186, 2200, 3186]; // sum=10772
 
       function row4(l1,v1,l2,v2) {
         return new TableRow({height:{value:400,rule:'exact'}, children:[
-          new TableCell({borders:brdP,width:{size:c4f[0],type:WidthType.DXA},margins:padSm,
-            children:[new Paragraph({children:[tx(l1,{sz:15,bold:true})]})]}),
-          new TableCell({borders:brdP,width:{size:c4f[1],type:WidthType.DXA},margins:pad,
-            children:[new Paragraph({children:[tx(v1||'',{sz:15})]})]}),
-          new TableCell({borders:brdP,width:{size:c4f[2],type:WidthType.DXA},margins:padSm,
-            children:[new Paragraph({children:[tx(l2,{sz:15,bold:true})]})]}),
-          new TableCell({borders:brdP,width:{size:c4f[3],type:WidthType.DXA},margins:pad,
-            children:[new Paragraph({children:[tx(v2||'',{sz:15})]})]})
-        ]});
-      }
-
-      function row2(label, val, o={}) {
-        return new TableRow({height:{value:o.tall?600:400,rule:'exact'}, children:[
-          new TableCell({borders:brdP,width:{size:c4f[0],type:WidthType.DXA},margins:padSm,
-            children:[new Paragraph({children:[tx(label,{sz:15,bold:true})]})]}),
-          new TableCell({borders:brdP,width:{size:c4f[1]+c4f[2]+c4f[3],type:WidthType.DXA},
-            columnSpan:3,margins:pad,
-            children:[new Paragraph({children:[tx(val||'',{sz:15})]})]})
+          new TableCell({borders:brdP,width:{size:c4f[0],type:WidthType.DXA},margins:padSm,children:[new Paragraph({children:[tx(l1,{sz:15,bold:true})]})]}),
+          new TableCell({borders:brdP,width:{size:c4f[1],type:WidthType.DXA},margins:padN,children:[new Paragraph({children:[tx(v1||'',{sz:15})]})]}),
+          new TableCell({borders:brdP,width:{size:c4f[2],type:WidthType.DXA},margins:padSm,children:[new Paragraph({children:[tx(l2,{sz:15,bold:true})]})]}),
+          new TableCell({borders:brdP,width:{size:c4f[3],type:WidthType.DXA},margins:padN,children:[new Paragraph({children:[tx(v2||'',{sz:15})]})]})
         ]});
       }
 
@@ -349,94 +286,68 @@ async function buildDocx(fise) {
       piRows.push(row4('Încl.:', f.piIncl, 'Exp:', f.piExp));
       piRows.push(row4('Alt. (m):', f.piAlt, 'Tip floră:', f.piTipFlora));
       piRows.push(row4('Tip sol:', f.piTipSol, 'Vârsta expl.:', f.piVarstaExpl));
-      piRows.push(row4('Dist. Drum auto (m):', f.piDistDrum, 'Semințiș util.:', ''));
-      // Arboret table header: Elem arb | Prp.%/Cons | Varsta | D cm | H m | Prov | CLP | Vol ha | Vol Total
-      const cArb = [1400, 1200, 1000, 900, 900, 900, 900, 1236, 1236]; // sum=9672... need 10772
-      const cA = [1600, 1300, 1100, 950, 950, 1000, 900, 1086, 1086]; // sum=9972
-      const cAf = [1700, 1372, 1100, 950, 950, 1000, 900, 1100, 1700]; // sum=10772 ✓
-      // Arboret header row
+      piRows.push(row4('Dist. Drum (m):', f.piDistDrum, 'Semințiș util:', f.piSemintis||''));
+
+      // Arboret headers
+      const cAf = [1700, 1372, 1100, 950, 950, 1000, 900, 1400, 1400]; // sum = 10772
       piRows.push(new TableRow({ children:[
-        new TableCell({borders:brdP,width:{size:cAf[0],type:WidthType.DXA},margins:padSm,
-          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Elem\narb',{sz:13,bold:true})]})]}),
-        new TableCell({borders:brdP,width:{size:cAf[1],type:WidthType.DXA},margins:padSm,
-          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Prp.%\nCons',{sz:13,bold:true})]})]}),
-        new TableCell({borders:brdP,width:{size:cAf[2],type:WidthType.DXA},margins:padSm,
-          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Vârstă\nani',{sz:13,bold:true})]})]}),
-        new TableCell({borders:brdP,width:{size:cAf[3],type:WidthType.DXA},margins:padSm,
-          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('D\ncm',{sz:13,bold:true})]})]}),
-        new TableCell({borders:brdP,width:{size:cAf[4],type:WidthType.DXA},margins:padSm,
-          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('H\nm',{sz:13,bold:true})]})]}),
-        new TableCell({borders:brdP,width:{size:cAf[5],type:WidthType.DXA},margins:padSm,
-          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Prov.',{sz:13,bold:true})]})]}),
-        new TableCell({borders:brdP,width:{size:cAf[6],type:WidthType.DXA},margins:padSm,
-          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('CLP',{sz:13,bold:true})]})]}),
-        new TableCell({borders:brdP,width:{size:cAf[7]+cAf[8],type:WidthType.DXA},columnSpan:2,margins:padSm,
-          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Volum (mc)',{sz:13,bold:true})]})]})
+        new TableCell({borders:brdP,width:{size:cAf[0],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Elem arb',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[1],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Prp.% Cons',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[2],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Vârstă ani',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[3],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('D cm',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[4],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('H m',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[5],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Prov.',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[6],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('CLP',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[7]+cAf[8],type:WidthType.DXA},columnSpan:2,margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Volum (mc)',{sz:13,bold:true})]})]})
       ]}));
-      // Volum sub-header
+      
       piRows.push(new TableRow({ children:[
         new TableCell({borders:brdP,width:{size:cAf[0]+cAf[1]+cAf[2]+cAf[3]+cAf[4]+cAf[5]+cAf[6],type:WidthType.DXA},columnSpan:7,margins:padSm,children:[new Paragraph({children:[tx('',{sz:12})]})] }),
         new TableCell({borders:brdP,width:{size:cAf[7],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('ha',{sz:13,bold:true})]})]}),
         new TableCell({borders:brdP,width:{size:cAf[8],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Total',{sz:13,bold:true})]})]})
       ]}));
-      // Arboret data rows
+
       const arboretList = f.piArboretList || [];
       const minRows = Math.max(arboretList.length, 5);
       for(let ai=0; ai<minRows; ai++){
         const s = arboretList[ai] || {};
-        piRows.push(new TableRow({height:{value:420,rule:'exact'}, children:[
-          new TableCell({borders:brdP,width:{size:cAf[0],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx(s.elem||'',{sz:14,bold:!!s.elem})]})]}),
-          new TableCell({borders:brdP,width:{size:cAf[1],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx(s.prp?(s.prp+(s.cons?'/'+s.cons:'')):'',{sz:13})]})]}),
-          new TableCell({borders:brdP,width:{size:cAf[2],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx(s.varsta||'',{sz:13})]})]}),
-          new TableCell({borders:brdP,width:{size:cAf[3],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx(s.d||'',{sz:13})]})]}),
-          new TableCell({borders:brdP,width:{size:cAf[4],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx(s.h||'',{sz:13})]})]}),
-          new TableCell({borders:brdP,width:{size:cAf[5],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx(s.prov||'',{sz:13})]})]}),
-          new TableCell({borders:brdP,width:{size:cAf[6],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx(s.clp||'',{sz:13})]})]}),
-          new TableCell({borders:brdP,width:{size:cAf[7],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx(s.volha||'',{sz:13})]})]}),
-          new TableCell({borders:brdP,width:{size:cAf[8],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx(s.voltotal||'',{sz:13})]})]})
+        piRows.push(new TableRow({height:{value:380,rule:'exact'}, children:[
+          new TableCell({borders:brdP, width:{size:cAf[0], type:WidthType.DXA}, margins:padN, children:[new Paragraph({children:[tx(s.elem||'')]})]}),
+          new TableCell({borders:brdP, width:{size:cAf[1], type:WidthType.DXA}, margins:padN, children:[new Paragraph({alignment:AlignmentType.CENTER, children:[tx(s.cons||'')]})]}),
+          new TableCell({borders:brdP, width:{size:cAf[2], type:WidthType.DXA}, margins:padN, children:[new Paragraph({alignment:AlignmentType.CENTER, children:[tx(s.varsta||'')]})]}),
+          new TableCell({borders:brdP, width:{size:cAf[3], type:WidthType.DXA}, margins:padN, children:[new Paragraph({alignment:AlignmentType.CENTER, children:[tx(s.d||'')]})]}),
+          new TableCell({borders:brdP, width:{size:cAf[4], type:WidthType.DXA}, margins:padN, children:[new Paragraph({alignment:AlignmentType.CENTER, children:[tx(s.h||'')]})]}),
+          new TableCell({borders:brdP, width:{size:cAf[5], type:WidthType.DXA}, margins:padN, children:[new Paragraph({alignment:AlignmentType.CENTER, children:[tx(s.prov||'')]})]}),
+          new TableCell({borders:brdP, width:{size:cAf[6], type:WidthType.DXA}, margins:padN, children:[new Paragraph({alignment:AlignmentType.CENTER, children:[tx(s.clp||'')]})]}),
+          new TableCell({borders:brdP, width:{size:cAf[7], type:WidthType.DXA}, margins:padN, children:[new Paragraph({alignment:AlignmentType.CENTER, children:[tx(s.volHa||'')]})]}),
+          new TableCell({borders:brdP, width:{size:cAf[8], type:WidthType.DXA}, margins:padN, children:[new Paragraph({alignment:AlignmentType.CENTER, children:[tx(s.volTotal||'')]})]})
         ]}));
       }
-      piRows.push(row2('Semințiș util.:', f.piSemintis));
-      piRows.push(row2('Date complementare:', f.piDateCompl, {tall:true}));
-      piRows.push(row2('Lucr. exec.:', f.piLucrExec));
-      piRows.push(row2('Lucr. propuse:', f.piLucrPropuse));
 
-      const piTable = new Table({ width:{size:PW,type:WidthType.DXA}, columnWidths:c4f, rows:piRows });
+      const piTable = new Table({ width:{size:PW, type:WidthType.DXA}, columnWidths:cAf, rows:piRows });
 
-      return [mainTable, new Paragraph({spacing:{before:60,after:60},children:[]}), piTable];
+      return [
+        mainTable,
+        new Paragraph({ children: [new TextRun({ text: "", break: 1 })] }),
+        piTable
+      ];
     }
 
     return [mainTable];
   }
 
-  function cutLine() {
-    return new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing:{before:80,after:80},
-      border:{bottom:{style:BorderStyle.DASHED,size:6,color:"666666",space:1}},
-      children:[new TextRun({text:'\u2702  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500  \u2702',
-        size:12, color:"999999", font:"Arial"})]
+  // Generare secțiuni per fișă
+  const sections = [];
+  for (const f of fise) {
+    const fisaElements = buildFisa(f);
+    sections.push({
+      properties: {},
+      children: [
+        ...fisaElements,
+        new Paragraph({ children: [new TextRun({ text: "", break: 1 })] }) 
+      ]
     });
   }
 
-  const children = [];
-  for(let i=0; i<fise.length; i+=2){
-    children.push(...buildFisa(fise[i]));
-    children.push(new Paragraph({spacing:{before:80,after:80},children:[]}));
-    children.push(cutLine());
-    children.push(new Paragraph({spacing:{before:80,after:0},children:[]}));
-    children.push(...(fise[i+1] ? buildFisa(fise[i+1]) : buildFisa({})));
-    if(i+2 < fise.length)
-      children.push(new Paragraph({pageBreakBefore:true,children:[]}));
-  }
-
-  const doc = new Document({
-    styles:{default:{document:{run:{font:"Arial",size:16}}}},
-    sections:[{
-      properties:{page:{size:{width:11906,height:16838},margin:{top:567,bottom:567,left:567,right:567}}},
-      children
-    }]
-  });
-
-  return await Packer.toBlob(doc);
+  return await Packer.toBlob(new Document({ sections }));
 }
