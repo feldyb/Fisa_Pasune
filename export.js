@@ -350,83 +350,37 @@ async function buildDocx(fise) {
       piRows.push(row4('Alt. (m):', f.piAlt, 'Tip floră:', f.piTipFlora));
       piRows.push(row4('Tip sol:', f.piTipSol, 'Vârsta expl.:', f.piVarstaExpl));
       piRows.push(row4('Dist. Drum auto (m):', f.piDistDrum, 'Semințiș util.:', ''));
-      // Arboret rows
-      const arboretLines = (f.piArboret||'').split('\n').filter(l=>l.trim());
-      if (arboretLines.length > 0) {
-        // Header row for arboret
-        piRows.push(new TableRow({ children:[
-          new TableCell({borders:brdP, width:{size:PW, type:WidthType.DXA}, columnSpan:4,
-            margins:padSm,
-            children:[new Paragraph({children:[tx('Elem. arb.  |  Prp.%/Cons  |  Vârstă  |  D cm  |  H m  |  Prov.  |  CLP  |  Vol.ha  |  Vol.Total',{sz:14,bold:true})]})]
-          })
-        ]}));
-        for(const line of arboretLines) {
-          piRows.push(new TableRow({height:{value:400,rule:'exact'}, children:[
-            new TableCell({borders:brdP, width:{size:PW, type:WidthType.DXA}, columnSpan:4,
-              margins:padSm,
-              children:[new Paragraph({children:[tx(line.trim(),{sz:14})]})]
-            })
-          ]}));
-        }
-        // Empty rows for additional entries
-        for(let ai=arboretLines.length; ai<5; ai++){
-          piRows.push(new TableRow({height:{value:380,rule:'exact'}, children:[
-            new TableCell({borders:brdP, width:{size:PW, type:WidthType.DXA}, columnSpan:4,
-              margins:padSm, children:[new Paragraph({children:[tx('',{sz:14})]})]
-            })
-          ]}));
-        }
-      } else {
-        // 5 empty arboret rows
-        for(let ai=0;ai<5;ai++){
-          piRows.push(new TableRow({height:{value:380,rule:'exact'}, children:[
-            new TableCell({borders:brdP, width:{size:PW, type:WidthType.DXA}, columnSpan:4,
-              margins:padSm, children:[new Paragraph({children:[tx('',{sz:14})]})]
-            })
-          ]}));
-        }
-      }
-      piRows.push(row2('Semințiș util.:', f.piSemintis));
-      piRows.push(row2('Date complementare:', f.piDateCompl, {tall:true}));
-      piRows.push(row2('Lucr. exec.:', f.piLucrExec));
-      piRows.push(row2('Lucr. propuse:', f.piLucrPropuse));
-
-      const piTable = new Table({ width:{size:PW,type:WidthType.DXA}, columnWidths:c4f, rows:piRows });
-
-      return [mainTable, new Paragraph({spacing:{before:60,after:60},children:[]}), piTable];
-    }
-
-    return [mainTable];
-  }
-
-  function cutLine() {
-    return new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing:{before:80,after:80},
-      border:{bottom:{style:BorderStyle.DASHED,size:6,color:"666666",space:1}},
-      children:[new TextRun({text:'\u2702  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500  \u2702',
-        size:12, color:"999999", font:"Arial"})]
-    });
-  }
-
-  const children = [];
-  for(let i=0; i<fise.length; i+=2){
-    children.push(...buildFisa(fise[i]));
-    children.push(new Paragraph({spacing:{before:80,after:80},children:[]}));
-    children.push(cutLine());
-    children.push(new Paragraph({spacing:{before:80,after:0},children:[]}));
-    children.push(...(fise[i+1] ? buildFisa(fise[i+1]) : buildFisa({})));
-    if(i+2 < fise.length)
-      children.push(new Paragraph({pageBreakBefore:true,children:[]}));
-  }
-
-  const doc = new Document({
-    styles:{default:{document:{run:{font:"Arial",size:16}}}},
-    sections:[{
-      properties:{page:{size:{width:11906,height:16838},margin:{top:567,bottom:567,left:567,right:567}}},
-      children
-    }]
-  });
-
-  return await Packer.toBlob(doc);
-}
+      // Arboret table header: Elem arb | Prp.%/Cons | Varsta | D cm | H m | Prov | CLP | Vol ha | Vol Total
+      const cArb = [1400, 1200, 1000, 900, 900, 900, 900, 1236, 1236]; // sum=9672... need 10772
+      const cA = [1600, 1300, 1100, 950, 950, 1000, 900, 1086, 1086]; // sum=9972
+      const cAf = [1700, 1372, 1100, 950, 950, 1000, 900, 1100, 1700]; // sum=10772 ✓
+      // Arboret header row
+      piRows.push(new TableRow({ children:[
+        new TableCell({borders:brdP,width:{size:cAf[0],type:WidthType.DXA},margins:padSm,
+          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Elem\narb',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[1],type:WidthType.DXA},margins:padSm,
+          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Prp.%\nCons',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[2],type:WidthType.DXA},margins:padSm,
+          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Vârstă\nani',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[3],type:WidthType.DXA},margins:padSm,
+          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('D\ncm',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[4],type:WidthType.DXA},margins:padSm,
+          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('H\nm',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[5],type:WidthType.DXA},margins:padSm,
+          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Prov.',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[6],type:WidthType.DXA},margins:padSm,
+          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('CLP',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[7]+cAf[8],type:WidthType.DXA},columnSpan:2,margins:padSm,
+          children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Volum (mc)',{sz:13,bold:true})]})]})
+      ]}));
+      // Volum sub-header
+      piRows.push(new TableRow({ children:[
+        new TableCell({borders:brdP,width:{size:cAf[0]+cAf[1]+cAf[2]+cAf[3]+cAf[4]+cAf[5]+cAf[6],type:WidthType.DXA},columnSpan:7,margins:padSm,children:[new Paragraph({children:[tx('',{sz:12})]})] }),
+        new TableCell({borders:brdP,width:{size:cAf[7],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('ha',{sz:13,bold:true})]})]}),
+        new TableCell({borders:brdP,width:{size:cAf[8],type:WidthType.DXA},margins:padSm,children:[new Paragraph({alignment:AlignmentType.CENTER,children:[tx('Total',{sz:13,bold:true})]})]})
+      ]}));
+      // Arboret data rows
+      const arboretList = f.piArboretList || [];
+      const minRows = Math.max(arboretList.length, 5);
+      for(let ai=0; ai<minRows; ai++){
+        const s = 
