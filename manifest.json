@@ -2,7 +2,7 @@
   "name": "Amenajament Pastoral",
   "short_name": "Pajiști",
   "description": "Aplicație pentru amenajament pastoral - specii, UVM, fișe descriere parcelară",
-  "start_url": "/Amenajamen-Pastoral/index.html",
+  "start_url": "/",
   "scope": "/Amenajamen-Pastoral/",
   "display": "standalone",
   "background_color": "#1a3a0a",
