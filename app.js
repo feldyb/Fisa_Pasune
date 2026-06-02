@@ -1,6 +1,6 @@
 /**
  * FIȘIER: app.js
- * Versiune ultra-rezistentă. Garantează pornirea interfeței și randarea tab-urilor.
+ * Versiune COMPLETĂ și securizată (Mecanism anti-crach + Toate câmpurile din amenajament)
  */
 
 // Inițializare dicționar botanic în siguranță
@@ -9,9 +9,8 @@ try {
   if (typeof BOTANICAL !== 'undefined' && Array.isArray(BOTANICAL)) {
     BOTANICAL.forEach(b => { if(b && b.cod) BOT_BY_COD[b.cod] = b; });
   }
-} catch(e) { console.error("Eroare la inițializare BOTANICAL:", e); }
+} catch(e) { console.error("Eroare BOTANICAL:", e); }
 
-// Funcții de siguranță pentru categorii
 function isToxic(categorie) {
   if (!categorie) return false;
   return categorie.toLowerCase().includes('toxice') || categorie.toLowerCase().includes('toxic');
@@ -22,67 +21,7 @@ function isBalast(categorie) {
   return categorie.toLowerCase().includes('balast') || categorie.toLowerCase().includes('daunatoare');
 }
 
-// Modal specii
-function openPlantModal(cod) {
-  try {
-    const sursaPlante = typeof PLANTE !== 'undefined' ? PLANTE : [];
-    const p = sursaPlante.find(x => x.cod === cod);
-    if (!p) return;
-    const toxic = isToxic(p.categorie);
-    const balast = isBalast(p.categorie);
-    const codCls = toxic ? 'toxic' : '';
-    const catCls = toxic ? 'toxic' : balast ? 'balast' : '';
-    const bot = BOT_BY_COD[cod];
-
-    let botHtml = '';
-    if (bot) {
-      const matchNote = bot.match_type === 'genus'
-        ? `<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:8px 10px;font-family:var(--font-mono);font-size:11px;color:#7a5c00;margin-bottom:12px">ⓘ Date botanice pentru genul înrudit <em>${bot.album_match}</em></div>`
-        : '';
-      const fields = [
-        ['Caractere', bot.caractere],
-        ['Talie', bot.talie],
-        ['Înflorire', bot.inflorire],
-        ['Frecvență', bot.frecventa],
-        ['Areal', bot.areal],
-        ['Răspândire', bot.raspandire],
-        ['Habitat', bot.habitat],
-        ['Ecologie', bot.ecologie],
-        ['Utilizări', bot.utilizari],
-      ].filter(([,v]) => v);
-
-      const rows = fields.map(([l, v]) => `
-        <div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #f0e8d0;">
-          <span style="font-family:var(--font-mono);font-size:10px;color:#888;min-width:80px;flex-shrink:0">${l}</span>
-          <span style="font-size:13px;color:var(--green-deep)">${v}</span>
-        </div>`).join('');
-
-      botHtml = `
-        <div style="margin-top:14px;border-top:2px solid var(--green-pale);padding-top:14px">
-          <div style="font-family:var(--font-mono);font-size:10px;color:var(--green-mid);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">📗 Date botanice (album 2013)</div>
-          ${matchNote}
-          ${rows}
-        </div>`;
-    }
-
-    const modalBody = document.getElementById('modal-body');
-    if(modalBody) {
-      modalBody.innerHTML = `
-        <div class="modal-cod ${codCls}">#${p.cod}</div>
-        <div class="modal-stiintific">${p.stiintific}</div>
-        <div class="modal-popular">${p.popular}</div>
-        <div class="modal-cat ${catCls}">${p.categorie}</div>
-        ${toxic ? '<div style="background:#fff0f0;border:1.5px solid #c0392b;border-radius:8px;padding:12px;color:#c0392b;font-size:13px;font-family:var(--font-mono)">⚠️ SPECIE TOXICĂ — poate dăuna animalelor</div>' : ''}
-        ${botHtml}
-        ${!bot ? '<div style="font-family:var(--font-mono);font-size:11px;color:#bbb;margin-top:12px">Fișă botanică indisponibilă pentru această specie în versiunea PDF redusă.</div>' : ''}
-      `;
-    }
-    const modalEl = document.getElementById('plant-modal');
-    if(modalEl) modalEl.classList.add('open');
-  } catch(e) { console.error("Eroare la openPlantModal:", e); }
-}
-
-// ===================== TABS (Navigare reparată) =====================
+// ===================== NAVIGARE TABS =====================
 function showTab(name) {
   try {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -92,10 +31,12 @@ function showTab(name) {
     const targetTab = document.getElementById('tab-' + name);
     if (targetPage) targetPage.classList.add('active');
     if (targetTab) targetTab.classList.add('active');
-  } catch(e) { console.error("Eroare la showTab:", e); }
+    
+    if(name === 'fise') { closeFisa(); }
+  } catch(e) { console.error("Eroare showTab:", e); }
 }
 
-// ===================== SPECII (Randare protejată) =====================
+// ===================== SPECII =====================
 function renderSpecii(list) {
   try {
     const container = document.getElementById('specii-list');
@@ -126,10 +67,10 @@ function renderSpecii(list) {
     });
 
     if (!listaSigura.length) {
-      html = `<div class="empty-state"><div class="es-icon">🔍</div><div class="es-text">Nicio specie găsită în baza de date</div></div>`;
+      html = `<div class="empty-state"><div class="es-icon">🔍</div><div class="es-text">Nicio specie găsită</div></div>`;
     }
     container.innerHTML = html;
-  } catch(e) { console.error("Eroare la renderSpecii:", e); }
+  } catch(e) { console.error("Eroare renderSpecii:", e); }
 }
 
 function filterSpecii() {
@@ -144,17 +85,10 @@ function filterSpecii() {
       (p.popular && p.popular.toLowerCase().includes(q)))
     );
     renderSpecii(filtered);
-  } catch(e) { console.error("Eroare la filterSpecii:", e); }
+  } catch(e) { console.error("Eroare filterSpecii:", e); }
 }
 
-function closePlantModal(e) {
-  const modal = document.getElementById('plant-modal');
-  if (modal && (!e || e.target === modal)) {
-    modal.classList.remove('open');
-  }
-}
-
-// ===================== UVM =====================
+// ===================== CALCULATOR UVM =====================
 let selectedTip = null;
 
 function renderTipGrid() {
@@ -168,32 +102,21 @@ function renderTipGrid() {
         <div class="tb-uvm">${t.uvm_min}–${t.uvm_max} UVM/ha</div>
       </div>
     `).join('');
-  } catch(e) { console.error("Eroare la renderTipGrid:", e); }
+  } catch(e) { console.error("Eroare renderTipGrid:", e); }
 }
 
-function selectTip(val) {
-  selectedTip = val;
-  renderTipGrid();
-  calcUVM();
-}
+function selectTip(val) { selectedTip = val; renderTipGrid(); calcUVM(); }
 
 function calcUVM() {
   try {
     if (typeof UVM_TIPURI === 'undefined') return;
     const tip = UVM_TIPURI.find(t => t.val === selectedTip);
-    const supEl = document.getElementById('uvm-sup');
-    const zileEl = document.getElementById('uvm-zile');
-    const valEl = document.getElementById('uvm-val');
+    const sup = parseFloat(document.getElementById('uvm-sup')?.value) || 0;
+    const zile = parseInt(document.getElementById('uvm-zile')?.value) || 180;
+    const val = parseFloat(document.getElementById('uvm-val')?.value) || 0.75;
     const resultEl = document.getElementById('uvm-result');
-    
-    const sup = supEl ? parseFloat(supEl.value) || 0 : 0;
-    const zile = zileEl ? parseInt(zileEl.value) || 180 : 180;
-    const val = valEl ? parseFloat(valEl.value) || 0.75 : 0.75;
 
-    if (!tip || !sup) {
-      if(resultEl) resultEl.style.display = 'none';
-      return;
-    }
+    if (!tip || !sup) { if(resultEl) resultEl.style.display = 'none'; return; }
 
     const uvmMid = (tip.uvm_min + tip.uvm_max) / 2;
     const uvmAdj = uvmMid * val;
@@ -214,16 +137,15 @@ function calcUVM() {
           <div class="uvm-detail-item"><div class="dl">Zile × UNB</div><div class="dv">${unb} UNB/an</div></div>
         </div>`;
     }
-  } catch(e) { console.error("Eroare la calcUVM:", e); }
+  } catch(e) { console.error("Eroare calcUVM:", e); }
 }
 
-// ===================== FISE =====================
+// ===================== GESTIUNE FIȘE PASTORALE =====================
 let fise = [];
 try { fise = JSON.parse(localStorage.getItem('fise_pastoral') || '[]'); } catch(e) { fise = []; }
 let currentFisa = null;
 let currentFisaIdx = null;
 let fisaSpecii = { gram: [], leg: [], div: [], toxic: [] };
-let spPickerTarget = null;
 
 function loadFiseList() {
   try {
@@ -243,7 +165,7 @@ function loadFiseList() {
         <div class="fi-loc">${f.sup ? f.sup+' ha · ' : ''}${f.catFolos || ''} ${f.unitRel ? '· '+f.unitRel : ''}</div>
         <div class="fi-tip">${f.tipPajiste || 'Tip pajiște necompletat'}</div>
       </div>`).join('');
-  } catch(e) { console.error("Eroare la loadFiseList:", e); }
+  } catch(e) { console.error("Eroare loadFiseList:", e); }
 }
 
 function newFisa() {
@@ -282,7 +204,7 @@ function deleteFisa(idx) {
 function openFisaForm() {
   document.getElementById('fise-list-view').style.display = 'none';
   document.getElementById('fisa-form-page').style.display = 'block';
-  document.getElementById('fisa-form-title').textContent = currentFisaIdx !== null ? `Tr.${currentFisa.trPas}/u.a.${currentFisa.ua}` : 'Fișă nouă';
+  document.getElementById('fisa-form-title').textContent = currentFisaIdx !== null ? `Modifică Tr.${currentFisa.trPas}/u.a.${currentFisa.ua}` : 'Fișă nouă';
   renderFisaForm();
 }
 
@@ -292,16 +214,64 @@ function closeFisa() {
   loadFiseList();
 }
 
-function onCatFolosChange(select) { if(currentFisa) currentFisa.catFolos = select.value; }
-function showArbustiRef() { const el = document.getElementById('arbusti-ref'); if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+// Salvarea datelor din interfață în LocalStorage
+function saveFisa() {
+  try {
+    if (!currentFisa) return;
 
-function addArbust(cod) {
-  const input = document.getElementById('f-arbusti');
-  if (!input) return;
-  let vals = input.value.trim() ? input.value.split(',').map(v=>v.trim()) : [];
-  if (!vals.includes(cod)) { vals.push(cod); input.value = vals.join(', '); }
+    // Colectăm valorile din inputuri introduse de utilizator
+    currentFisa.trPas = document.getElementById('f-trPas')?.value || '';
+    currentFisa.ua = document.getElementById('f-ua')?.value || '';
+    currentFisa.sup = document.getElementById('f-sup')?.value || '';
+    currentFisa.grFunct = document.getElementById('f-grFunct')?.value || '';
+    currentFisa.ts = document.getElementById('f-ts')?.value || '';
+    currentFisa.catFolos = document.getElementById('f-catFolos')?.value || 'Pășune';
+    currentFisa.unitRel = document.getElementById('f-unitRel')?.value || '';
+    currentFisa.confTeren = document.getElementById('f-confTeren')?.value || '';
+    
+    currentFisa.incl = document.getElementById('f-incl')?.value || '';
+    currentFisa.exp = document.getElementById('f-exp')?.value || '';
+    currentFisa.alt = document.getElementById('f-alt')?.value || '';
+    currentFisa.unitSol = document.getElementById('f-unitSol')?.value || '';
+    
+    currentFisa.tipPajiste = document.getElementById('f-tipPajiste')?.value || '';
+    currentFisa.acopIerb = document.getElementById('f-acopIerb')?.value || '';
+    
+    currentFisa.valPast = document.getElementById('f-valPast')?.value || 'mijlocie';
+    currentFisa.arbusti = document.getElementById('f-arbusti')?.value || '';
+    currentFisa.grAcop = document.getElementById('f-grAcop')?.value || '';
+    currentFisa.raspArb = document.getElementById('f-raspArb')?.value || '';
+    
+    currentFisa.vegFor = document.getElementById('f-vegFor')?.value || '';
+    currentFisa.varsta = document.getElementById('f-varsta')?.value || '';
+    currentFisa.consist = document.getElementById('f-consist')?.value || '';
+    currentFisa.raspFor = document.getElementById('f-raspFor')?.value || '';
+    
+    currentFisa.dateCompl = document.getElementById('f-dateCompl')?.value || '';
+    currentFisa.lucrExec = document.getElementById('f-lucrExec')?.value || '';
+
+    // Salvăm listele de specii selectate
+    currentFisa.speciiGram = fisaSpecii.gram;
+    currentFisa.speciiLeg = fisaSpecii.leg;
+    currentFisa.speciiDiv = fisaSpecii.div;
+    currentFisa.speciiToxic = fisaSpecii.toxic;
+
+    if (currentFisaIdx !== null) {
+      fise[currentFisaIdx] = currentFisa;
+    } else {
+      fise.push(currentFisa);
+    }
+
+    localStorage.setItem('fise_pastoral', JSON.stringify(fise));
+    alert('✓ Fișa a fost salvată cu succes!');
+    closeFisa();
+  } catch(e) {
+    console.error("Eroare la salvarea fișei:", e);
+    alert('Eroare la salvare: ' + e.message);
+  }
 }
 
+// Căutare și cipuri specii
 function renderChips(target) {
   if (!fisaSpecii[target] || !fisaSpecii[target].length) return `<span style="color:#aaa; font-size:12px; font-style:italic;">Nicio specie adăugată.</span>`;
   const sursaPlante = typeof PLANTE !== 'undefined' ? PLANTE : [];
@@ -318,70 +288,59 @@ function renderChips(target) {
 
 function removeChip(target, cod) {
   fisaSpecii[target] = fisaSpecii[target].filter(s => s.cod !== cod);
-  document.getElementById('chips-' + target).innerHTML = renderChips(target);
+  const el = document.getElementById('chips-' + target);
+  if(el) el.innerHTML = renderChips(target);
 }
 
 function openSpeciesPicker(target) {
-  spPickerTarget = target;
   const promptCod = prompt("Introdu codul numeric al plantei:");
   if (!promptCod) return;
   const codNum = parseInt(promptCod);
   const sursaPlante = typeof PLANTE !== 'undefined' ? PLANTE : [];
   const p = sursaPlante.find(x => x.cod === codNum);
-  if (!p) { alert("Codul nu a fost găsit în baza locală!"); return; }
+  if (!p) { alert("Codul nu a fost găsit în baza de date!"); return; }
   const pct = prompt(`Introdu procentul (%) pentru ${p.stiintific}:`, "10");
   if (pct === null) return;
   fisaSpecii[target].push({ cod: codNum, pct: pct || '?' });
-  document.getElementById('chips-' + target).innerHTML = renderChips(target);
+  const el = document.getElementById('chips-' + target);
+  if(el) el.innerHTML = renderChips(target);
 }
 
-// ── LISTENERS RIGUROȘI PENTRU PORNIREA INTERFEȚEI ──
-function initApp() {
-  console.log("Se inițializează interfața...");
-  const sursaPlante = typeof PLANTE !== 'undefined' ? PLANTE : [];
-  renderSpecii(sursaPlante);
-  renderTipGrid();
-  loadFiseList();
-  
-  // Conectăm și bara de căutare din imagine ca să funcționeze în timp ce tastați
-  const sInput = document.getElementById('search-specii');
-  if(sInput) { sInput.addEventListener('input', filterSpecii); }
+function showArbustiRef() { const el = document.getElementById('arbusti-ref'); if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+function addArbust(cod) {
+  const input = document.getElementById('f-arbusti');
+  if (!input) return;
+  let vals = input.value.trim() ? input.value.split(',').map(v=>v.trim()) : [];
+  if (!vals.includes(cod)) { vals.push(cod); input.value = vals.join(', '); }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
-  initApp();
-}
-
+// RENDER FORMULAR COMPLET (Identic cu macheta originală de teren)
 function renderFisaForm() {
   const f = currentFisa || {};
   const contentEl = document.getElementById('fisa-form-content');
   if(!contentEl) return;
+  
   contentEl.innerHTML = `
     <div class="form-section">
-      <div class="form-section-title">📍 Identificare parcelă</div>
+      <div class="form-section-title">📍 IDENTIFICARE PARCELĂ</div>
       <div class="form-row">
-        <div class="form-field"><label>Tr. Păș.</label><input type="text" id="f-trPas" value="${f.trPas || ''}"></div>
-        <div class="form-field"><label>u.a.</label><input type="text" id="f-ua" value="${f.ua || ''}"></div>
+        <div class="form-field"><label>TR. PĂȘ.</label><input type="text" id="f-trPas" value="${f.trPas || ''}"></div>
+        <div class="form-field"><label>U.A.</label><input type="text" id="f-ua" value="${f.ua || ''}"></div>
       </div>
       <div class="form-row">
-        <div class="form-field"><label>Suprafață (ha)</label><input type="number" id="f-sup" value="${f.sup || ''}" step="0.1"></div>
-        <div class="form-field"><label>Gr. funcțională</label><input type="text" id="f-grFunct" value="${f.grFunct || ''}"></div>
+        <div class="form-field"><label>SUPRAFAȚĂ (HA)</label><input type="number" id="f-sup" value="${f.sup || ''}" step="0.1"></div>
+        <div class="form-field"><label>GR. FUNCȚIONALĂ</label><input type="text" id="f-grFunct" value="${f.grFunct || ''}"></div>
       </div>
-    </div>
-    <div class="form-section">
-      <div class="form-section-title">🌾 Compoziție Floristică</div>
-      <div class="form-field"><label>Tip pajiște</label><input type="text" id="f-tipPajiste" value="${f.tipPajiste || ''}"></div>
-    </div>
-    <div class="specii-adaugate" id="chips-gram">${renderChips('gram')}</div>
-    <button class="add-specie-btn" onclick="openSpeciesPicker('gram')">➕ Adaugă gramineă</button>
-    <div class="specii-adaugate" id="chips-leg">${renderChips('leg')}</div>
-    <button class="add-specie-btn" onclick="openSpeciesPicker('leg')">➕ Adaugă leguminoasă</button>
-    <div class="specii-adaugate" id="chips-div">${renderChips('div')}</div>
-    <button class="add-specie-btn" onclick="openSpeciesPicker('div')">➕ Adaugă diversă</button>
-    <div class="specii-adaugate" id="chips-toxic">${renderChips('toxic')}</div>
-    <button class="add-specie-btn" onclick="openSpeciesPicker('toxic')">➕ Adaugă toxică</button>
-    <div style="padding: 20px 10px;"><button class="add-specie-btn" style="background:#2e7d32; color:#fff;" onclick="closeFisa()">Înapoi la listă</button></div>
-  `;
-}
+      <div class="form-row">
+        <div class="form-field"><label>TIP STAȚIUNE (T.S.)</label><input type="text" id="f-ts" value="${f.ts || ''}"></div>
+        <div class="form-field"><label>CATEG. FOLOSINȚĂ</label>
+          <select id="f-catFolos">
+            <option ${f.catFolos==='Pășune'?'selected':''}>Pășune</option>
+            <option ${f.catFolos==='Pășune cu arbori'?'selected':''}>Pășune cu arbori</option>
+            <option ${f.catFolos==='Fânețe'?'selected':''}>Fânețe</option>
+            <option ${f.catFolos==='Pășune împădurită'?'selected':''}>Pășune împădurită</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>UNITATE RELIEF</label><input type="text" id="f-unitRel"
