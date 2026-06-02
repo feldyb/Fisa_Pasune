@@ -1,6 +1,5 @@
 // ── PLANTNET CAMERA ───────────────────────────────────────────────────────────
-const PLANTNET_KEY = '2b10Qq1LQb6AOnIw2QXcWdMqOe';
-let camTarget = null; // which category to add to after ID
+let camTarget = null; // Categoria în care se va adăuga planta după identificare
 
 function openCameraModal(target) {
   camTarget = target || null;
@@ -20,7 +19,7 @@ async function handleCamPhoto(input) {
   const file = input.files[0];
   if (!file) return;
 
-  // Show preview
+  // Afișează preview-ul imaginii
   const preview = document.getElementById('cam-preview');
   preview.src = URL.createObjectURL(file);
   preview.style.display = 'block';
@@ -32,18 +31,18 @@ async function handleCamPhoto(input) {
   try {
     const formData = new FormData();
     formData.append('images', file);
-    formData.append('organs', 'auto');
 
-    const resp = await fetch(
-      `https://my-api.plantnet.org/v2/identify/all?api-key=${PLANTNET_KEY}&lang=ro&nb-results=5`,
-      { method: 'POST', body: formData }
-    );
+    // Apelăm scriptul proxy local PHP (identificare.php se ocupă de cheia API și organs=auto)
+    const resp = await fetch('identificare.php', {
+      method: 'POST',
+      body: formData
+    });
 
     document.getElementById('cam-loading').style.display = 'none';
 
     if (!resp.ok) {
-      const err = await resp.json().catch(()=>({}));
-      document.getElementById('cam-status').textContent = `Eroare PlantNet: ${err.message || resp.status}`;
+      const err = await resp.json().catch(() => ({}));
+      document.getElementById('cam-status').textContent = `Eroare server: ${err.message || resp.status}`;
       return;
     }
 
@@ -52,7 +51,7 @@ async function handleCamPhoto(input) {
 
   } catch(e) {
     document.getElementById('cam-loading').style.display = 'none';
-    document.getElementById('cam-status').textContent = '❌ Fără conexiune internet. PlantNet necesită semnal.';
+    document.getElementById('cam-status').textContent = '❌ Fără conexiune internet sau scriptul PHP este inaccesibil.';
   }
 }
 
@@ -63,7 +62,6 @@ function renderPlantNetResults(results) {
     return;
   }
 
-  // Match each result against our Excel plant list
   let html = `<div style="font-family:var(--font-mono);font-size:11px;color:#888;margin-bottom:8px">
     Atinge un rezultat pentru a-l adăuga în fișă:</div>`;
 
@@ -74,26 +72,43 @@ function renderPlantNetResults(results) {
     const genus = sciName.split(' ')[0].toLowerCase();
     const sp2 = sciName.split(' ')[1]?.toLowerCase() || '';
 
-    // Try to find in Excel list
+    // Căutare potrivire în lista locală Excel (PLANTE)
     let excelMatch = PLANTE.find(p => {
       const pg = p.stiintific.split(' ')[0].toLowerCase();
       const ps = (p.stiintific.split(' ')[1] || '').toLowerCase();
       return pg === genus && ps === sp2;
     });
-    // Fallback: genus only
+    
     if (!excelMatch) {
       excelMatch = PLANTE.find(p => p.stiintific.split(' ')[0].toLowerCase() === genus);
     }
 
     const toxic = excelMatch && isToxic(excelMatch.categorie);
-    const codBadge = excelMatch
-      ? `<span class="cr-cod ${toxic?'style="background:#fde;color:var(--red-toxic)"':''}">Cod ${excelMatch.cod} — ${excelMatch.popular}</span>`
-      : `<span class="cr-cod" style="background:#f0f0f0;color:#aaa">Negăsit în lista Excel</span>`;
+    
+    let badgeStyle = "";
+    if (excelMatch && toxic) {
+      badgeStyle = 'style="background:#fde;color:var(--red-toxic)"';
+    } else if (!excelMatch) {
+      // Stil albastru/punctat pentru plantele care NU sunt în baza ta Excel
+      badgeStyle = 'style="background:#e3f2fd;color:#0d47a1;border:1px dashed #90caf9"';
+    }
 
-    html += `<div class="cam-result ${toxic?'toxic-match':''}" onclick="addPlantNetResult(${excelMatch?.cod||'null'}, '${sciName.replace(/'/g,"\\'")}', ${score})">
+    const codBadge = excelMatch
+      ? `<span class="cr-cod" ${badgeStyle}>Cod ${excelMatch.cod} — ${excelMatch.popular}</span>`
+      : `<span class="cr-cod" ${badgeStyle}>✨ Specie nouă (Nu este în Excel)</span>`;
+
+    // Pregătim denumirile populare (fallback dacă PlantNet nu trimite denumire în română)
+    const popularName = commonNames.length ? commonNames.slice(0,2).join(', ') : 'Specie externă';
+    
+    // Criptăm textele ca să nu spargă ghilimelele din HTML-ul inline
+    const safeSci = encodeURIComponent(sciName);
+    const safePop = encodeURIComponent(popularName);
+    const matchCod = excelMatch ? excelMatch.cod : 'null';
+
+    html += `<div class="cam-result ${toxic ? 'toxic-match' : ''}" onclick="addPlantNetResult(${matchCod}, ${score}, '${safeSci}', '${safePop}')">
       <span class="cr-score">${score}%</span>
       <div class="cr-sci">${sciName}</div>
-      ${commonNames.length ? `<div class="cr-pop">${commonNames.slice(0,2).join(', ')}</div>` : ''}
+      ${commonNames.length ? `<div class="cr-pop">${popularName}</div>` : ''}
       ${codBadge}
     </div>`;
   });
@@ -101,38 +116,71 @@ function renderPlantNetResults(results) {
   container.innerHTML = html;
 }
 
-function addPlantNetResult(cod, sciName, score) {
-  if (!cod) {
-    toast('Specia nu e în lista Excel — adaugă manual');
-    closeCameraModal();
-    return;
+function addPlantNetResult(cod, score, safeSci, safePop) {
+  // Decodificăm denumirile plantelor
+  const sciName = decodeURIComponent(safeSci);
+  const popularName = decodeURIComponent(safePop);
+  
+  let p = null;
+  let isNewPlant = false;
+
+  if (cod === null) {
+    // Generăm un cod unic artificial bazat pe timp, ca să nu se bată cap în cap cu restul codurilor tale
+    const tempCod = Math.floor(Date.now() / 1000); 
+    isNewPlant = true;
+    
+    p = {
+      cod: tempCod,
+      stiintific: sciName,
+      popular: popularName + " (PlantNet)",
+      categorie: "Diverse (Identificare Cameră)"
+    };
+
+    // O injectăm temporar în lista globală PLANTE ca funcțiile tale de randare (renderChips) să nu dea eroare
+    PLANTE.push(p);
+    cod = tempCod;
+  } else {
+    p = PLANTE.find(x => x.cod === cod);
   }
 
-  const p = PLANTE.find(x => x.cod === cod);
-  const toxic = p && isToxic(p.categorie);
+  if (!p) return;
 
-  // Determine target category based on plant type
+  const toxic = typeof isToxic === 'function' ? isToxic(p.categorie) : false;
+  const balast = typeof isBalast === 'function' ? isBalast(p.categorie) : false;
+
+  // Stabilim secțiunea din fișă unde trimitem planta
   let target = camTarget;
   if (!target) {
-    if (!p) target = 'div';
-    else if (p.categorie.includes('Graminee')) target = 'gram';
+    if (p.categorie.includes('Graminee')) target = 'gram';
     else if (p.categorie.includes('Leguminoase')) target = 'leg';
-    else if (isToxic(p.categorie) || isBalast(p.categorie)) target = toxic ? 'toxic' : 'div';
-    else target = 'div';
+    else if (toxic || balast) target = toxic ? 'toxic' : 'div';
+    else target = 'div'; // Cele noi merg automat la diverse dacă nu s-a specificat o categorie la deschiderea camerei
   }
 
-  // Check if already added
+  // Verificăm dublurile
   if (fisaSpecii[target].find(s => s.cod === cod)) {
-    toast(`Cod ${cod} deja adăugat`);
+    toast(`Această specie a fost deja adăugată.`);
     closeCameraModal();
     return;
   }
 
-  const pct = prompt(`Adaugă ${sciName}\nIntroduce procentul (%) estimat:`, '');
-  if (pct === null) return;
+  // Solicitare procent
+  const pctRaw = prompt(`Adaugă ${p.stiintific}\nIntroduce procentul (%) estimat în teren:`, '');
+  if (pctRaw === null) return; 
 
-  fisaSpecii[target].push({ cod, pct: pct || '?' });
+  const parsedPct = pctRaw.trim() === '' ? '?' : parseFloat(pctRaw.replace(',', '.'));
+  const finalPct = isNaN(parsedPct) ? '?' : parsedPct;
+
+  // Introducere în baza ta de date din sesiune
+  fisaSpecii[target].push({ cod, pct: finalPct });
+  
+  // Re-randare elemente vizuale (chips-uri) în interfața fișei
   document.getElementById('chips-' + target).innerHTML = renderChips(target);
   closeCameraModal();
-  toast(`✓ Cod ${cod} adăugat în ${target} (${score}% certitudine PlantNet)`);
+  
+  if (isNewPlant) {
+    toast(`✓ Specie nouă salvată: ${p.stiintific} în secțiunea [${target}]`);
+  } else {
+    toast(`✓ Cod ${cod} adăugat în ${target} (${score}% certitudine)`);
+  }
 }
