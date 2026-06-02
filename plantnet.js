@@ -1,5 +1,5 @@
 // ── PLANTNET CAMERA ───────────────────────────────────────────────────────────
-const PLANTNET_KEY = '2b10Z2jOlH2ZLooNaGooW75L';
+const PLANTNET_KEY = '2b10Qq1LQb6AOnIw2QXcWdMqOe';
 let camTarget = null; // which category to add to after ID
 
 function openCameraModal(target) {
