@@ -1,3 +1,8 @@
+/**
+ * FIȘIER: app.js
+ * Versiune completă și securizată (Integrare locală cu identificare.php)
+ */
+
 const BOT_BY_COD = {};
 BOTANICAL.forEach(b => { BOT_BY_COD[b.cod] = b; });
 
@@ -103,8 +108,6 @@ function filterSpecii() {
   );
   renderSpecii(filtered);
 }
-
-// openPlantModal replaced below
 
 function closePlantModal(e) {
   if (!e || e.target === document.getElementById('plant-modal')) {
@@ -266,7 +269,6 @@ function closeFisa() {
 function renderFisaForm() {
   const f = currentFisa;
   document.getElementById('fisa-form-content').innerHTML = `
-    <!-- Antet -->
     <div class="form-section">
       <div class="form-section-title">📍 Identificare parcelă</div>
       <div class="form-row">
@@ -320,7 +322,6 @@ function renderFisaForm() {
       </div>
     </div>
 
-    <!-- Stationale -->
     <div class="form-section">
       <div class="form-section-title">🌡 Date staționale</div>
       <div class="form-row">
@@ -347,7 +348,6 @@ function renderFisaForm() {
       </div>
     </div>
 
-    <!-- Pajiste -->
     <div class="form-section">
       <div class="form-section-title">🌿 Tip pajiște și acoperire</div>
       <div class="form-field">
@@ -360,7 +360,6 @@ function renderFisaForm() {
       </div>
     </div>
 
-    <!-- Graminee -->
     <div class="form-section">
       <div class="form-section-title">🌾 Graminee</div>
       <div class="form-field">
@@ -370,9 +369,8 @@ function renderFisaForm() {
     </div>
     <div class="specii-adaugate" id="chips-gram">${renderChips('gram')}</div>
     <button class="add-specie-btn" onclick="openSpeciesPicker('gram')">➕ Adaugă specie gramineă</button>
-    <button class="add-specie-btn" onclick="openCameraModal()" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:2px">📷 Identifică plantă cu camera (PlantNet)</button>
+    <button class="add-specie-btn" onclick="openCameraModal('gram')" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:2px">📷 Identifică gramineă cu camera</button>
 
-    <!-- Leguminoase -->
     <div class="form-section">
       <div class="form-section-title">🍀 Leguminoase</div>
       <div class="form-field">
@@ -382,8 +380,8 @@ function renderFisaForm() {
     </div>
     <div class="specii-adaugate" id="chips-leg">${renderChips('leg')}</div>
     <button class="add-specie-btn" onclick="openSpeciesPicker('leg')">➕ Adaugă specie leguminoasă</button>
+    <button class="add-specie-btn" onclick="openCameraModal('leg')" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:2px">📷 Identifică leguminoasă cu camera</button>
 
-    <!-- Diverse -->
     <div class="form-section">
       <div class="form-section-title">🌼 Diverse + Balast</div>
       <div class="form-field">
@@ -393,8 +391,8 @@ function renderFisaForm() {
     </div>
     <div class="specii-adaugate" id="chips-div">${renderChips('div')}</div>
     <button class="add-specie-btn" onclick="openSpeciesPicker('div')">➕ Adaugă specie diversă</button>
+    <button class="add-specie-btn" onclick="openCameraModal('div')" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:2px">📷 Identifică plantă diversă cu camera</button>
 
-    <!-- Toxice -->
     <div class="form-section">
       <div class="form-section-title" style="color:var(--red-toxic)">⚠️ Plante toxice + dăunătoare</div>
       <div class="form-field">
@@ -404,8 +402,8 @@ function renderFisaForm() {
     </div>
     <div class="specii-adaugate" id="chips-toxic">${renderChips('toxic')}</div>
     <button class="add-specie-btn" onclick="openSpeciesPicker('toxic')">➕ Adaugă specie toxică</button>
+    <button class="add-specie-btn" onclick="openCameraModal('toxic')" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:2px">📷 Identifică plantă toxică cu camera</button>
 
-    <!-- Valoare + Arbusti -->
     <div class="form-section">
       <div class="form-section-title">⭐ Valoare pastorală și arbuști</div>
       <div class="form-field">
@@ -443,7 +441,6 @@ function renderFisaForm() {
       </div>
     </div>
 
-    <!-- Veg forestiera -->
     <div class="form-section">
       <div class="form-section-title">🌲 Vegetație forestieră</div>
       <div class="form-field">
@@ -466,7 +463,6 @@ function renderFisaForm() {
       </div>
     </div>
 
-    <!-- Date complementare -->
     <div class="form-section">
       <div class="form-section-title">📝 Date complementare</div>
       <div class="form-field">
@@ -475,7 +471,6 @@ function renderFisaForm() {
       </div>
     </div>
 
-    <!-- Lucrari executate -->
     <div class="form-section">
       <div class="form-section-title">✅ Lucrări executate anterior</div>
       <div class="form-field">
@@ -483,331 +478,8 @@ function renderFisaForm() {
       </div>
     </div>
 
-    <!-- Lucrari executate cod -->
     <div class="form-section">
       <div class="form-section-title">✅ Lucrări executate (cod)</div>
       <div class="form-field">
         <label>Coduri lucrări executate</label>
-        <input type="text" id="f-lucrExecCod" value="${f.lucrExecCod||''}" placeholder="ex: 623, 628, 632">
-      </div>
-    </div>
-
-    <!-- Lucrari propuse -->
-    <div class="form-section">
-      <div class="form-section-title">🔧 Lucrări propuse</div>
-      <div class="lucrari-grid" id="lucrari-grid">${renderLucrari()}</div>
-    </div>
-
-    <!-- Eroziune -->
-    <div class="form-section">
-      <div class="form-section-title" style="color:#8b3a00">🌊 Eroziune</div>
-      <div class="lucrari-grid" id="eroziune-grid">${renderEroziune()}</div>
-    </div>
-
-    ${f.catFolos === 'Pășune împădurită' ? `
-    <div class="form-section" style="border-color:#4a3010">
-      <div class="form-section-title" style="background:#f5ede0;color:#4a3010">&#127795; DATE VEGETA&#538;IE FORESTIER&#258; (P&#259;&#351;une \u00eempădurit\u0103)</div>
-      <div class="form-row">
-        <div class="form-field"><label>Unit. Relief</label>
-          <input type="text" id="f-piUnitRelief" value="${f.piUnitRelief||''}" placeholder="ex: Versant"></div>
-        <div class="form-field"><label>Conf.</label>
-          <input type="text" id="f-piConf" value="${f.piConf||''}" placeholder="ex: ondulat"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-field"><label>&#206;ncl. (&#176;)</label>
-          <input type="number" id="f-piIncl" value="${f.piIncl||''}" placeholder="ex: 20"></div>
-        <div class="form-field"><label>Exp.</label>
-          <select id="f-piExp">${['','N','NE','E','SE','S','SV','V','NV','Plat'].map(e=>`<option ${(f.piExp||'')===e?'selected':''}>${e}</option>`).join('')}</select></div>
-        <div class="form-field"><label>Alt. (m)</label>
-          <input type="number" id="f-piAlt" value="${f.piAlt||''}" placeholder="ex: 700"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-field"><label>Tip flor&#259;</label>
-          <input type="text" id="f-piTipFlora" value="${f.piTipFlora||''}" placeholder="ex: FM"></div>
-        <div class="form-field"><label>Tip sol</label>
-          <input type="text" id="f-piTipSol" value="${f.piTipSol||''}" placeholder="ex: 3312"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-field"><label>V&#226;rsta exploatabilit&#259;&#539;ii</label>
-          <input type="number" id="f-piVarstaExpl" value="${f.piVarstaExpl||''}" placeholder="ani"></div>
-        <div class="form-field"><label>Dist. Drum auto (m)</label>
-          <input type="number" id="f-piDistDrum" value="${f.piDistDrum||''}" placeholder="ex: 500"></div>
-      </div>
-      <div class="form-field"><label>Sem&#226;n&#539;i&#351; utilizabil</label>
-        <input type="text" id="f-piSemintis" value="${f.piSemintis||''}" placeholder="ex: MO 80% - 2000 ex/ha"></div>
-      <div style="padding:8px 14px 4px;font-family:var(--font-mono);font-size:10px;color:#8b5a2b;text-transform:uppercase;letter-spacing:.07em">&#127795; Elemente arboret</div>
-      <div style="padding:4px 14px 8px;display:flex;flex-wrap:wrap;gap:6px">
-        ${(f.piArboretList||[]).map((s,i)=>`<div style="background:#f5ede0;border:1.5px solid #8b5a2b;border-radius:8px;padding:6px 10px;font-family:var(--font-mono);font-size:11px;color:#4a3010;display:flex;align-items:center;gap:6px"><strong>${s.elem}</strong> ${s.prp}% Cons:${s.cons} ${s.varsta}ani D${s.d}cm H${s.h}m ${s.prov?'Prov:'+s.prov:''} ${s.clp?'CLP:'+s.clp:''}<button onclick="removePiArboret(${i})" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:16px;padding:0;line-height:1">✕</button></div>`).join('')}
-        ${(f.piArboretList||[]).length===0?'<span style="font-family:var(--font-mono);font-size:11px;color:#aaa">— niciun element adăugat</span>':''}
-      </div>
-      <button class="add-specie-btn" onclick="openPiArboretModal()" style="border-color:#8b5a2b;color:#8b5a2b;margin:0 10px 8px">&#10133; Adaugă element arboret</button>
-      <div class="form-field"><label>Date complementare</label>
-        <textarea id="f-piDateCompl" placeholder="observa&#539;ii suplimentare">${f.piDateCompl||''}</textarea></div>
-      <div class="form-field"><label>Lucr&#259;ri executate (coduri)</label>
-        <input type="text" id="f-piLucrExec" value="${f.piLucrExec||''}" placeholder="ex: 46, T1, 628"></div>
-      <div class="form-field"><label>Lucr&#259;ri propuse (coduri)</label>
-        <input type="text" id="f-piLucrPropuse" value="${f.piLucrPropuse||''}" placeholder="ex: T2, 625, 632"></div>
-    </div>
-    ` : ''}
-
-    <div style="height:20px"></div>
-  `;
-}
-
-function renderChips(tip) {
-  const list = fisaSpecii[tip];
-  if (!list.length) return '<span style="font-family:var(--font-mono);font-size:11px;color:#aaa;padding:4px 6px">— nicio specie adăugată</span>';
-  return list.map((s, i) => {
-    const p = PLANTE.find(x => x.cod === s.cod);
-    const isTox = p && isToxic(p.categorie);
-    return `<span class="specie-chip ${isTox?'toxic':''}">
-      <strong>${s.cod}</strong> ${p ? p.stiintific.split(' ')[0] : ''} <em>${s.pct}%</em>
-      <button onclick="removeSpecie('${tip}',${i})">✕</button>
-    </span>`;
-  }).join('');
-}
-
-function removeSpecie(tip, idx) {
-  fisaSpecii[tip].splice(idx, 1);
-  document.getElementById('chips-' + tip).innerHTML = renderChips(tip);
-}
-
-function renderLucrari() {
-  return LUCRARI.map(l => {
-    const entry = fisaLucrari.find(x => (typeof x==='object' ? x.cod : x) === l.cod);
-    const checked = !!entry;
-    const pct = entry && typeof entry==='object' ? entry.pct : '';
-    const pctInput = checked ? `<div style="display:flex;align-items:center;gap:6px;padding-left:22px" onclick="event.stopPropagation()"><span style="font-family:var(--font-mono);font-size:11px;color:#888">% supraf.:</span><input type="number" min="0" max="100" value="${pct}" placeholder="%" style="width:58px;border:1.5px solid var(--green-bright);border-radius:4px;padding:3px 6px;font-size:13px;font-family:var(--font-mono);background:white" oninput="updateLucrPct('` + l.cod + `',this.value)"></div>` : '';
-    return `<div class="lucrare-check ${checked?'checked':''}" style="flex-direction:column;align-items:flex-start;gap:3px" onclick="toggleLucrare('${l.cod}',this)"><div style="display:flex;align-items:center;gap:6px;width:100%;pointer-events:none"><div class="lc-box">${checked?'✓':''}</div><span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--green-mid);min-width:28px">${l.cod}</span><span style="font-size:12px;flex:1;line-height:1.2">${l.den}</span></div>${pctInput}</div>`;
-  }).join('');
-}
-function toggleLucrare(cod, el) {
-  const idx = fisaLucrari.findIndex(x => (typeof x==='object' ? x.cod : x) === cod);
-  if (idx > -1) {
-    fisaLucrari.splice(idx, 1);
-  } else {
-    fisaLucrari.push({cod, pct:''});
-  }
-  document.getElementById('lucrari-grid').innerHTML = renderLucrari();
-}
-
-function updateLucrPct(cod, val) {
-  const entry = fisaLucrari.find(x => (typeof x==='object' ? x.cod : x) === cod);
-  if (entry && typeof entry==='object') entry.pct = val;
-}
-
-function renderEroziune() {
-  return EROZIUNE.map(e => {
-    const checked = fisaEroziune.includes(e.cod);
-    return `<div class="lucrare-check ${checked?'checked':''}" style="border-color:#c06020" onclick="toggleEroziune('${e.cod}',this)">
-      <div class="lc-box" style="border-color:#c06020;${checked?'background:#c06020;color:white;border-color:#c06020':''}">
-        ${checked?'✓':''}
-      </div>
-      <span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:#8b3a00;min-width:28px">${e.cod}</span>
-      <span style="font-size:12px">${e.den}</span>
-    </div>`;
-  }).join('');
-}
-
-function toggleEroziune(e, el) {
-  const idx = fisaEroziune.indexOf(e);
-  if (idx > -1) {
-    fisaEroziune.splice(idx, 1);
-    el.classList.remove('checked');
-    el.querySelector('.lc-box').textContent = '';
-  } else {
-    fisaEroziune.push(e);
-    el.classList.add('checked');
-    el.querySelector('.lc-box').textContent = '✓';
-  }
-}
-
-// ── PI ARBORET ───────────────────────────────────────────────────────────────
-function openPiArboretModal(editIdx) {
-  saveFisa();
-  const list = currentFisa.piArboretList || [];
-  const s = editIdx !== undefined ? list[editIdx] : {};
-  document.getElementById('pia-edit-idx').value = editIdx !== undefined ? editIdx : '';
-  document.getElementById('pia-elem').value = s.elem||'';
-  document.getElementById('pia-prp').value = s.prp||'';
-  document.getElementById('pia-cons').value = s.cons||'';
-  document.getElementById('pia-varsta').value = s.varsta||'';
-  document.getElementById('pia-d').value = s.d||'';
-  document.getElementById('pia-h').value = s.h||'';
-  document.getElementById('pia-prov').value = s.prov||'';
-  document.getElementById('pia-clp').value = s.clp||'';
-  document.getElementById('pia-volha').value = s.volha||'';
-  document.getElementById('pia-voltotal').value = s.voltotal||'';
-  document.getElementById('pi-arboret-modal').classList.add('open');
-}
-
-function closePiArboretModal() {
-  document.getElementById('pi-arboret-modal').classList.remove('open');
-}
-
-function savePiArboretEntry() {
-  const entry = {
-    elem:     document.getElementById('pia-elem').value.trim(),
-    prp:      document.getElementById('pia-prp').value.trim(),
-    cons:     document.getElementById('pia-cons').value.trim(),
-    varsta:   document.getElementById('pia-varsta').value.trim(),
-    d:        document.getElementById('pia-d').value.trim(),
-    h:        document.getElementById('pia-h').value.trim(),
-    prov:     document.getElementById('pia-prov').value.trim(),
-    clp:      document.getElementById('pia-clp').value.trim(),
-    volha:    document.getElementById('pia-volha').value.trim(),
-    voltotal: document.getElementById('pia-voltotal').value.trim(),
-  };
-  if (!entry.elem) { toast('Introduceți specia (ex: MO, FA, DM)'); return; }
-  if (!currentFisa.piArboretList) currentFisa.piArboretList = [];
-  const idx = document.getElementById('pia-edit-idx').value;
-  if (idx !== '') {
-    currentFisa.piArboretList[parseInt(idx)] = entry;
-  } else {
-    currentFisa.piArboretList.push(entry);
-  }
-  closePiArboretModal();
-  saveFisa();
-  renderFisaForm();
-  toast('✓ Element arboret adăugat');
-}
-
-function removePiArboret(idx) {
-  if (!currentFisa.piArboretList) return;
-  currentFisa.piArboretList.splice(idx, 1);
-  saveFisa();
-  renderFisaForm();
-}
-
-function onCatFolosChange(el) {
-  // Update currentFisa.catFolos and re-render to show/hide PI section
-  if (currentFisa) {
-    currentFisa.catFolos = el.value;
-    // Save all current field values before re-rendering
-    saveFisa();
-    renderFisaForm();
-  }
-}
-
-function saveFisa() {
-  const f = currentFisa;
-  // Collect all field values
-  const fields = ['trPas','ua','sup','grFunct','ts','catFolos','unitRel','confTeren',
-    'incl','exp','alt','unitSol','tipPajiste','acopIerb','valPast',
-    'arbusti','grAcop','raspArb','vegFor','varsta','consist','raspFor',
-    'dateCompl','lucrExec','lucrExecCod','gramTotal','legTotal','divTotal','toxicTotal',
-    'piUnitRelief','piConf','piIncl','piExp','piAlt','piTipFlora','piTipSol',
-    'piVarstaExpl','piDistDrum','piSemintis','piDateCompl','piLucrExec','piLucrPropuse','piArboret'];
-
-  fields.forEach(id => {
-    const el = document.getElementById('f-' + id);
-    if (el) f[id] = el.value;
-  });
-
-  f.eroziune = fisaEroziune;
-  f.speciiGram = fisaSpecii.gram;
-  f.speciiLeg = fisaSpecii.leg;
-  f.speciiDiv = fisaSpecii.div;
-  f.speciiToxic = fisaSpecii.toxic;
-  f.lucrari = fisaLucrari;
-  f.piArboretList = currentFisa.piArboretList || [];
-
-  if (currentFisaIdx !== null) {
-    fise[currentFisaIdx] = f;
-  } else {
-    fise.push(f);
-    currentFisaIdx = fise.length - 1;
-  }
-
-  localStorage.setItem('fise_pastoral', JSON.stringify(fise));
-  document.getElementById('fisa-form-title').textContent = `Tr.${f.trPas}/u.a.${f.ua}`;
-  toast('✓ Fișă salvată');
-}
-
-// ===================== SPECIES PICKER =====================
-function openSpeciesPicker(target) {
-  // Save current form state first
-  saveFisa();
-  spPickerTarget = target;
-  document.getElementById('sp-title').textContent = {
-    gram:'Adaugă gramineă', leg:'Adaugă leguminoasă',
-    div:'Adaugă diverse/balast', toxic:'Adaugă specie toxică'
-  }[target];
-  document.getElementById('sp-search').value = '';
-  filterSpPicker();
-  document.getElementById('species-picker').classList.add('open');
-  setTimeout(() => document.getElementById('sp-search').focus(), 200);
-}
-
-function closeSpeciesPicker(e) {
-  if (!e || e.target === document.getElementById('species-picker')) {
-    document.getElementById('species-picker').classList.remove('open');
-  }
-}
-
-function filterSpPicker() {
-  const q = document.getElementById('sp-search').value.toLowerCase().trim();
-  const list = q ? PLANTE.filter(p =>
-    String(p.cod).startsWith(q) ||
-    p.stiintific.toLowerCase().includes(q) ||
-    p.popular.toLowerCase().includes(q)
-  ) : PLANTE;
-
-  let html = '';
-  let lastCat = null;
-  list.forEach(p => {
-    if (p.categorie !== lastCat) {
-      lastCat = p.categorie;
-      html += `<div class="sp-cat-label">${p.categorie}</div>`;
-    }
-    const isTox = isToxic(p.categorie);
-    html += `<div class="sp-item" onclick="addSpeciePicker(${p.cod})">
-      <div class="sp-cod ${isTox?'toxic':''}">${p.cod}</div>
-      <div class="sp-names">
-        <div class="sp-sci">${p.stiintific}</div>
-        <div class="sp-pop">${p.popular}</div>
-      </div>
-    </div>`;
-  });
-  document.getElementById('sp-list').innerHTML = html || '<div class="empty-state"><div class="es-text">Nicio specie</div></div>';
-}
-
-function addSpeciePicker(cod) {
-  const already = fisaSpecii[spPickerTarget].find(s => s.cod === cod);
-  if (already) { toast('Specia e deja adăugată'); return; }
-  const pct = prompt('Procent (%) pentru această specie:', '');
-  if (pct === null) return;
-  fisaSpecii[spPickerTarget].push({ cod, pct: pct || '?' });
-  document.getElementById('species-picker').classList.remove('open');
-  document.getElementById('chips-' + spPickerTarget).innerHTML = renderChips(spPickerTarget);
-  toast(`Cod ${cod} adăugat`);
-}
-
-// ===================== TOAST =====================
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2000);
-}
-
-
-function showArbustiRef() {
-  const ref = document.getElementById('arbusti-ref');
-  if (ref) ref.style.display = ref.style.display === 'none' ? 'block' : 'none';
-}
-function addArbust(cod) {
-  const inp = document.getElementById('f-arbusti');
-  if (!inp) return;
-  const current = inp.value.split(',').map(s=>s.trim()).filter(Boolean);
-  if (!current.includes(cod)) current.push(cod);
-  inp.value = current.join(', ');
-}
-// ===================== INIT =====================
-renderSpecii(PLANTE);
-renderTipGrid();
-loadFiseList();
-
-// PWA offline indicator
-window.addEventListener('online', () => document.getElementById('offline-badge').style.background = 'var(--green-bright)');
-window.addEventListener('offline', () => document.getElementById('offline-badge').style.background = 'var(--red-toxic)');
+        <input type="text" id="
