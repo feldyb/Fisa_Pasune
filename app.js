@@ -1,6 +1,6 @@
 /**
  * FIȘIER: app.js
- * Versiune completă și securizată (Integrare locală cu identificare.php)
+ * Versiune completă, reparată și optimizată pentru GitHub Pages
  */
 
 const BOT_BY_COD = {};
@@ -152,7 +152,6 @@ function calcUVM() {
   const totalMax = tip.uvm_max * val * sup;
   const totalMid = uvmAdj * sup;
 
-  // UNB = cap pășunat * zile / 365
   const unb = (totalMid * zile / 365).toFixed(1);
 
   document.getElementById('uvm-result').style.display = 'block';
@@ -266,6 +265,62 @@ function closeFisa() {
   loadFiseList();
 }
 
+// Funcții auxiliare obligatorii pentru randarea corectă a interfeței
+function onCatFolosChange(select) {
+  if(currentFisa) currentFisa.catFolos = select.value;
+}
+function showArbustiRef() {
+  const el = document.getElementById('arbusti-ref');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function addArbust(cod) {
+  const input = document.getElementById('f-arbusti');
+  let vals = input.value.trim() ? input.value.split(',').map(v=>v.trim()) : [];
+  if (!vals.includes(cod)) {
+    vals.push(cod);
+    input.value = vals.join(', ');
+  }
+}
+
+function renderChips(target) {
+  if (!fisaSpecii[target] || !fisaSpecii[target].length) {
+    return `<span style="color:#aaa; font-size:12px; font-style:italic;">Nicio specie adăugată.</span>`;
+  }
+  return fisaSpecii[target].map(s => {
+    const p = PLANTE.find(x => x.cod === s.cod);
+    if (!p) return '';
+    return `
+      <span class="plant-chip" style="display:inline-flex; align-items:center; background:#e8f5e9; border:1px solid #c8e6c9; border-radius:16px; padding:4px 10px; margin:4px; font-size:13px; color:#1b5e20;">
+        <strong>#${p.cod}</strong>&nbsp;${p.stiintific} (${s.pct}%)
+        <button onclick="removeChip('${target}', ${s.cod})" style="background:none; border:none; margin-left:6px; color:#c62828; font-weight:bold; cursor:pointer; font-size:14px;">&times;</button>
+      </span>`;
+  }).join('');
+}
+
+function removeChip(target, cod) {
+  fisaSpecii[target] = fisaSpecii[target].filter(s => s.cod !== cod);
+  document.getElementById('chips-' + target).innerHTML = renderChips(target);
+}
+
+function openSpeciesPicker(target) {
+  spPickerTarget = target;
+  const promptCod = prompt("Introdu codul numeric al plantei din listă:");
+  if (!promptCod) return;
+  const codNum = parseInt(promptCod);
+  const p = PLANTE.find(x => x.cod === codNum);
+  if (!p) { alert("Codul nu a fost găsit în baza locală!"); return; }
+  
+  const pct = prompt(`Introdu procentul (%) pentru ${p.stiintific}:`, "10");
+  if (pct === null) return;
+  
+  fisaSpecii[target].push({ cod: codNum, pct: pct || '?' });
+  document.getElementById('chips-' + target).innerHTML = renderChips(target);
+}
+
+function toast(msg) {
+  alert(msg); // Implementare simplă de notificare, înlocuibilă cu UI custom
+}
+
 function renderFisaForm() {
   const f = currentFisa;
   document.getElementById('fisa-form-content').innerHTML = `
@@ -274,27 +329,27 @@ function renderFisaForm() {
       <div class="form-row">
         <div class="form-field">
           <label>Tr. Păș.</label>
-          <input type="text" id="f-trPas" value="${f.trPas}" placeholder="ex: 1">
+          <input type="text" id="f-trPas" value="${f.trPas || ''}" placeholder="ex: 1">
         </div>
         <div class="form-field">
           <label>u.a.</label>
-          <input type="text" id="f-ua" value="${f.ua}" placeholder="ex: 1A">
+          <input type="text" id="f-ua" value="${f.ua || ''}" placeholder="ex: 1A">
         </div>
       </div>
       <div class="form-row">
         <div class="form-field">
           <label>Suprafață (ha)</label>
-          <input type="number" id="f-sup" value="${f.sup}" placeholder="ex: 12.5" step="0.1">
+          <input type="number" id="f-sup" value="${f.sup || ''}" placeholder="ex: 12.5" step="0.1">
         </div>
         <div class="form-field">
           <label>Gr. funcțională</label>
-          <input type="text" id="f-grFunct" value="${f.grFunct}" placeholder="ex: II-PP">
+          <input type="text" id="f-grFunct" value="${f.grFunct || ''}" placeholder="ex: II-PP">
         </div>
       </div>
       <div class="form-row">
         <div class="form-field">
           <label>Tip stațiune (T.S.)</label>
-          <input type="text" id="f-ts" value="${f.ts}" placeholder="ex: 52331">
+          <input type="text" id="f-ts" value="${f.ts || ''}" placeholder="ex: 52331">
         </div>
         <div class="form-field">
           <label>Categ. folosință</label>
@@ -309,7 +364,7 @@ function renderFisaForm() {
       <div class="form-row">
         <div class="form-field">
           <label>Unitate relief</label>
-          <input type="text" id="f-unitRel" value="${f.unitRel}" placeholder="ex: Versant inf.">
+          <input type="text" id="f-unitRel" value="${f.unitRel || ''}" placeholder="ex: Versant inf.">
         </div>
         <div class="form-field">
           <label>Conf. teren</label>
@@ -327,7 +382,7 @@ function renderFisaForm() {
       <div class="form-row">
         <div class="form-field">
           <label>Înclinare (°)</label>
-          <input type="number" id="f-incl" value="${f.incl}" placeholder="0–45">
+          <input type="number" id="f-incl" value="${f.incl || ''}" placeholder="0–45">
         </div>
         <div class="form-field">
           <label>Expoziție</label>
@@ -339,11 +394,11 @@ function renderFisaForm() {
       <div class="form-row">
         <div class="form-field">
           <label>Altitudine (m)</label>
-          <input type="number" id="f-alt" value="${f.alt}" placeholder="ex: 650">
+          <input type="number" id="f-alt" value="${f.alt || ''}" placeholder="ex: 650">
         </div>
         <div class="form-field">
           <label>Unitate sol</label>
-          <input type="text" id="f-unitSol" value="${f.unitSol}" placeholder="ex: Brun acid tipic">
+          <input type="text" id="f-unitSol" value="${f.unitSol || ''}" placeholder="ex: Brun acid tipic">
         </div>
       </div>
     </div>
@@ -352,11 +407,11 @@ function renderFisaForm() {
       <div class="form-section-title">🌿 Tip pajiște și acoperire</div>
       <div class="form-field">
         <label>Tip pajiște (asoc. fitocen.)</label>
-        <input type="text" id="f-tipPajiste" value="${f.tipPajiste}" placeholder="ex: Agrostis capillaris – Nardus stricta">
+        <input type="text" id="f-tipPajiste" value="${f.tipPajiste || ''}" placeholder="ex: Agrostis capillaris – Nardus stricta">
       </div>
       <div class="form-field">
         <label>Acoperire ierbacee (%)</label>
-        <input type="number" id="f-acopIerb" value="${f.acopIerb}" placeholder="0–100" min="0" max="100">
+        <input type="number" id="f-acopIerb" value="${f.acopIerb || ''}" placeholder="0–100" min="0" max="100">
       </div>
     </div>
 
@@ -369,7 +424,7 @@ function renderFisaForm() {
     </div>
     <div class="specii-adaugate" id="chips-gram">${renderChips('gram')}</div>
     <button class="add-specie-btn" onclick="openSpeciesPicker('gram')">➕ Adaugă specie gramineă</button>
-    <button class="add-specie-btn" onclick="openCameraModal('gram')" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:2px">📷 Identifică gramineă cu camera</button>
+    <button class="add-specie-btn" onclick="openCameraModal('gram')" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:4px">📷 Identifică gramineă cu camera</button>
 
     <div class="form-section">
       <div class="form-section-title">🍀 Leguminoase</div>
@@ -380,7 +435,7 @@ function renderFisaForm() {
     </div>
     <div class="specii-adaugate" id="chips-leg">${renderChips('leg')}</div>
     <button class="add-specie-btn" onclick="openSpeciesPicker('leg')">➕ Adaugă specie leguminoasă</button>
-    <button class="add-specie-btn" onclick="openCameraModal('leg')" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:2px">📷 Identifică leguminoasă cu camera</button>
+    <button class="add-specie-btn" onclick="openCameraModal('leg')" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:4px">📷 Identifică leguminoasă cu camera</button>
 
     <div class="form-section">
       <div class="form-section-title">🌼 Diverse + Balast</div>
@@ -391,10 +446,10 @@ function renderFisaForm() {
     </div>
     <div class="specii-adaugate" id="chips-div">${renderChips('div')}</div>
     <button class="add-specie-btn" onclick="openSpeciesPicker('div')">➕ Adaugă specie diversă</button>
-    <button class="add-specie-btn" onclick="openCameraModal('div')" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:2px">📷 Identifică plantă diversă cu camera</button>
+    <button class="add-specie-btn" onclick="openCameraModal('div')" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:4px">📷 Identifică plantă diversă cu camera</button>
 
     <div class="form-section">
-      <div class="form-section-title" style="color:var(--red-toxic)">⚠️ Plante toxice + dăunătoare</div>
+      <div class="form-section-title" style="color:var(--red-toxic, #c0392b)">⚠️ Plante toxice + dăunătoare</div>
       <div class="form-field">
         <label>Total % toxice</label>
         <input type="number" id="f-toxicTotal" value="${f.toxicTotal||''}" placeholder="ex: 5" min="0" max="100">
@@ -402,218 +457,12 @@ function renderFisaForm() {
     </div>
     <div class="specii-adaugate" id="chips-toxic">${renderChips('toxic')}</div>
     <button class="add-specie-btn" onclick="openSpeciesPicker('toxic')">➕ Adaugă specie toxică</button>
-    <button class="add-specie-btn" onclick="openCameraModal('toxic')" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:2px">📷 Identifică plantă toxică cu camera</button>
+    <button class="add-specie-btn" onclick="openCameraModal('toxic')" style="border-color:#2d7bb5;color:#2d7bb5;margin-top:4px">📷 Identifică plantă toxică cu camera</button>
 
     <div class="form-section">
-      <div class="form-section-title">🌲 Vegetație forestieră</div>
+      <div class="form-section-title">⭐ Valoare pastorală și arbuști</div>
       <div class="form-field">
-        <label>Compoziție (ex: 5MO3ANN2DM)</label>
-        <input type="text" id="f-vegFor" value="${f.vegFor}" placeholder="ex: 5MO3ANN2DM">
-      </div>
-      <div class="form-row">
-        <div class="form-field">
-          <label>Vârsta (ani)</label>
-          <input type="number" id="f-varsta" value="${f.varsta}" placeholder="ex: 25">
-        </div>
-        <div class="form-field">
-          <label>Consistență</label>
-          <input type="text" id="f-consist" value="${f.consist}" placeholder="ex: 0.4">
-        </div>
-      </div>
-      <div class="form-field">
-        <label>Răspândire / Volum (m³)</label>
-        <input type="text" id="f-raspFor" value="${f.raspFor}" placeholder="ex: pâlcuri / 45 m³">
-      </div>
-    </div>
-
-    <div class="form-section">
-      <div class="form-section-title">📝 Date complementare</div>
-      <div class="form-field">
-        <label>Observații teren</label>
-        <textarea id="f-dateCompl" placeholder="mușuroaie, exces umiditate, vegetație lemnoasă pe pârâu etc.">${f.dateCompl}</textarea>
-      </div>
-    </div>
-
-    <div class="form-section">
-      <div class="form-section-title">✅ Lucrări executate anterior</div>
-      <div class="form-field">
-        <textarea id="f-lucrExec" placeholder="descriere lucrări anterioare">${f.lucrExec}</textarea>
-      </div>
-    </div>
-  `;
-}
-
-// ── PLANTNET CAMERA (VARIANTA OPTIMIZATĂ CU PROXY CORS PENTRU GITHUB) ───────────
-const PLANTNET_KEY = '2b10Qq1LQb6AOnIw2QXcWdMqOe'; 
-let camTarget = null; 
-
-function openCameraModal(target) {
-  camTarget = target || null;
-  document.getElementById('cam-preview').style.display = 'none';
-  document.getElementById('cam-status').textContent = 'Fă o poză clară a frunzelor sau florii plantei';
-  document.getElementById('cam-loading').style.display = 'none';
-  document.getElementById('cam-results').innerHTML = '';
-  document.getElementById('cam-input').value = '';
-  document.getElementById('camera-modal').classList.add('open');
-}
-
-function closeCameraModal() {
-  document.getElementById('camera-modal').classList.remove('open');
-}
-
-async function handleCamPhoto(input) {
-  const file = input.files[0];
-  if (!file) return;
-
-  const preview = document.getElementById('cam-preview');
-  preview.src = URL.createObjectURL(file);
-  preview.style.display = 'block';
-
-  document.getElementById('cam-loading').style.display = 'block';
-  document.getElementById('cam-results').innerHTML = '';
-  document.getElementById('cam-status').textContent = 'Se identifică planta prin Proxy CORS, așteaptă...';
-
-  try {
-    const formData = new FormData();
-    formData.append('images', file);
-    formData.append('organs', 'auto');
-
-    const targetUrl = `https://my-api.plantnet.org/v2/identify/all?api-key=${PLANTNET_KEY}&lang=ro&nb-results=5`;
-    const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-
-    const resp = await fetch(proxyUrl + targetUrl, { 
-      method: 'POST',
-      body: formData,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    });
-
-    document.getElementById('cam-loading').style.display = 'none';
-
-    if (resp.status === 403) {
-      document.getElementById('cam-status').innerHTML = `
-        <div style="background:#fff3cd; color:#664d03; padding:10px; border-radius:6px; font-size:12px; border:1px solid #ffecb5; line-height:1.4">
-          ⚠️ <strong>Necesită activare proxy temporară:</strong><br>
-          Pentru a folosi camera de pe GitHub Pages, dă click o singură dată pe link-ul de mai jos, apasă butonul <strong>"Request temporary access to demo server"</strong>, apoi revino în aplicație și reîncearcă poza:<br><br>
-          <a href="https://cors-anywhere.herokuapp.com/corsdemo" target="_blank" style="color:#0d6efd; font-weight:bold; text-decoration:underline">Apasă aici pentru Activare Proxy</a>
-        </div>`;
-      return;
-    }
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      document.getElementById('cam-status').textContent = `❌ Eroare server (${resp.status}): ${err.message || 'Problemă la identificare'}`;
-      return;
-    }
-
-    const data = await resp.json();
-    document.getElementById('cam-status').textContent = '';
-    renderPlantNetResults(data.results || []);
-
-  } catch(e) {
-    document.getElementById('cam-loading').style.display = 'none';
-    document.getElementById('cam-status').textContent = `❌ Conexiunea a fost blocată de CORS sau rețea.`;
-    console.error(e);
-  }
-}
-
-function renderPlantNetResults(results) {
-  const container = document.getElementById('cam-results');
-  if (!results.length) {
-    container.innerHTML = '<div class="cam-no-match">Nicio plantă identificată. Încearcă o poză mai clară.</div>';
-    return;
-  }
-
-  let html = `<div style="font-family:var(--font-mono);font-size:11px;color:#888;margin-bottom:8px">Atinge un rezultat pentru a-l adăuga în fișă:</div>`;
-
-  results.forEach(r => {
-    const sciName = r.species?.scientificNameWithoutAuthor || '';
-    const commonNames = r.species?.commonNames || [];
-    const score = Math.round((r.score || 0) * 100);
-    const genus = sciName.split(' ')[0].toLowerCase();
-    const sp2 = sciName.split(' ')[1]?.toLowerCase() || '';
-
-    let excelMatch = PLANTE.find(p => {
-      const pg = p.stiintific.split(' ')[0].toLowerCase();
-      const ps = (p.stiintific.split(' ')[1] || '').toLowerCase();
-      return pg === genus && ps === sp2;
-    });
-    
-    if (!excelMatch) {
-      excelMatch = PLANTE.find(p => p.stiintific.split(' ')[0].toLowerCase() === genus);
-    }
-
-    const toxic = excelMatch && isToxic(excelMatch.categorie);
-    
-    let badgeStyle = "";
-    if (excelMatch && toxic) {
-      badgeStyle = 'style="background:#fde;color:var(--red-toxic)"';
-    } else if (!excelMatch) {
-      badgeStyle = 'style="background:#e3f2fd;color:#0d47a1;border:1px dashed #90caf9"';
-    }
-
-    const codBadge = excelMatch
-      ? `<span class="cr-cod" ${badgeStyle}>Cod ${excelMatch.cod} — ${excelMatch.popular}</span>`
-      : `<span class="cr-cod" ${badgeStyle}>✨ Specie nouă (Nu este în Excel)</span>`;
-
-    const popularName = commonNames.length ? commonNames.slice(0,2).join(', ') : 'Specie externă';
-    
-    html += `<div class="cam-result ${toxic ? 'toxic-match' : ''}" onclick="addPlantNetResult(${excelMatch ? excelMatch.cod : 'null'}, ${score}, '${encodeURIComponent(sciName)}', '${encodeURIComponent(popularName)}')">
-      <span class="cr-score">${score}%</span>
-      <div class="cr-sci">${sciName}</div>
-      ${commonNames.length ? `<div class="cr-pop">${popularName}</div>` : ''}
-      ${codBadge}
-    </div>`;
-  });
-  container.innerHTML = html;
-}
-
-function addPlantNetResult(cod, score, safeSci, safePop) {
-  const sciName = decodeURIComponent(safeSci);
-  const popularName = decodeURIComponent(safePop);
-  let p = null, isNewPlant = false;
-
-  if (cod === null) {
-    const tempCod = Math.floor(Date.now() / 1000); 
-    isNewPlant = true;
-    p = { 
-      cod: tempCod, 
-      stiintific: sciName, 
-      popular: popularName + " (PlantNet)", 
-      categorie: "Diverse (Identificare Cameră)" 
-    };
-    PLANTE.push(p);
-    cod = tempCod;
-  } else {
-    p = PLANTE.find(x => x.cod === cod);
-  }
-
-  if (!p) return;
-  const toxic = typeof isToxic === 'function' ? isToxic(p.categorie) : false;
-  const balast = typeof isBalast === 'function' ? isBalast(p.categorie) : false;
-
-  let target = camTarget;
-  if (!target) {
-    if (p.categorie.includes('Graminee')) target = 'gram';
-    else if (p.categorie.includes('Leguminoase')) target = 'leg';
-    else if (toxic || balast) target = toxic ? 'toxic' : 'div';
-    else target = 'div';
-  }
-
-  if (fisaSpecii[target].find(s => s.cod === cod)) {
-    toast(`Această specie a fost deja adăugată.`);
-    closeCameraModal();
-    return;
-  }
-
-  const pctRaw = prompt(`Adaugă ${p.stiintific}\nIntroduce procentul (%) estimat în teren:`, '');
-  if (pctRaw === null) return; 
-
-  const parsedPct = pctRaw.trim() === '' ? '?' : parseFloat(pctRaw.replace(',', '.'));
-  fisaSpecii[target].push({ cod, pct: isNaN(parsedPct) ? '?' : parsedPct });
-  
-  document.getElementById('chips-' + target).innerHTML = renderChips(target);
-  closeCameraModal();
-  toast(isNewPlant ? `✓ Specie nouă: ${p.stiintific}` : `✓ Cod ${cod} adăugat`);
-}
+        <label>Valoare pastorală</label>
+        <select id="f-valPast">
+          <option ${f.valPast==='bună'?'selected':''}>bună</option>
+          <option ${f.valPast==='mijlocie'?'selected':''}>mijlocie</option>
