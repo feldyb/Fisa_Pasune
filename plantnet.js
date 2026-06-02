@@ -1,5 +1,5 @@
-// ── PLANTNET CAMERA (VARIANTA DIRECTĂ PENTRU GITHUB - FĂRĂ PHP) ────────────────
-const PLANTNET_KEY = '2b10Qq1LQb6AOnIw2QXcWdMqOe'; // ⚠ ATENȚIE: Vizibilă public pe Git!
+// ── PLANTNET CAMERA (VERSIUNE COMPLETĂ PENTRU GITHUB PAGES) ───────────────────
+const PLANTNET_KEY = '2b10Qq1LQb6AOnIw2QXcWdMqOe'; 
 let camTarget = null; 
 
 function openCameraModal(target) {
@@ -26,33 +26,39 @@ async function handleCamPhoto(input) {
 
   document.getElementById('cam-loading').style.display = 'block';
   document.getElementById('cam-results').innerHTML = '';
-  document.getElementById('cam-status').textContent = '';
+  document.getElementById('cam-status').textContent = 'Se identifică planta, te rog așteaptă...';
 
   try {
     const formData = new FormData();
     formData.append('images', file);
-    formData.append('organs', 'auto'); // Adăugat direct aici, fiindcă nu mai avem PHP
+    formData.append('organs', 'auto');
 
-    // Apelăm direct API-ul PlantNet (funcționează pe GitHub Pages)
+    // Fetch optimizat cu modul 'cors' pentru a preveni blocarea sau loop-ul pe GitHub Pages
     const resp = await fetch(
       `https://my-api.plantnet.org/v2/identify/all?api-key=${PLANTNET_KEY}&lang=ro&nb-results=5`,
-      { method: 'POST', body: formData }
+      { 
+        method: 'POST', 
+        mode: 'cors',
+        body: formData 
+      }
     );
 
     document.getElementById('cam-loading').style.display = 'none';
 
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
-      document.getElementById('cam-status').textContent = `Eroare PlantNet: ${err.message || resp.status}`;
+      document.getElementById('cam-status').textContent = `❌ Eroare PlantNet (${resp.status}): ${err.message || 'Verifică cheia API'}`;
       return;
     }
 
     const data = await resp.json();
+    document.getElementById('cam-status').textContent = '';
     renderPlantNetResults(data.results || []);
 
   } catch(e) {
     document.getElementById('cam-loading').style.display = 'none';
-    document.getElementById('cam-status').textContent = '❌ Fără conexiune internet. PlantNet necesită semnal.';
+    document.getElementById('cam-status').textContent = `❌ Eroare tehnică: ${e.message || 'Conexiune blocată'}`;
+    console.error(e);
   }
 }
 
@@ -84,11 +90,22 @@ function renderPlantNetResults(results) {
     }
 
     const toxic = excelMatch && isToxic(excelMatch.categorie);
-    let badgeStyle = excelMatch && toxic ? 'style="background:#fde;color:var(--red-toxic)"' : (!excelMatch ? 'style="background:#e3f2fd;color:#0d47a1;border:1px dashed #90caf9"' : '');
-    const codBadge = excelMatch ? `<span class="cr-cod" ${badgeStyle}>Cod ${excelMatch.cod} — ${excelMatch.popular}</span>` : `<span class="cr-cod" ${badgeStyle}>✨ Specie nouă (Nu este în Excel)</span>`;
+    
+    // Stiluri dinamice bazate pe prezența în Excel și toxicitate
+    let badgeStyle = "";
+    if (excelMatch && toxic) {
+      badgeStyle = 'style="background:#fde;color:var(--red-toxic)"';
+    } else if (!excelMatch) {
+      badgeStyle = 'style="background:#e3f2fd;color:#0d47a1;border:1px dashed #90caf9"';
+    }
+
+    const codBadge = excelMatch
+      ? `<span class="cr-cod" ${badgeStyle}>Cod ${excelMatch.cod} — ${excelMatch.popular}</span>`
+      : `<span class="cr-cod" ${badgeStyle}>✨ Specie nouă (Nu este în Excel)</span>`;
 
     const popularName = commonNames.length ? commonNames.slice(0,2).join(', ') : 'Specie externă';
     
+    // Criptăm parametrii text pentru a preveni spargerea stringului în HTML-ul inline
     html += `<div class="cam-result ${toxic ? 'toxic-match' : ''}" onclick="addPlantNetResult(${excelMatch ? excelMatch.cod : 'null'}, ${score}, '${encodeURIComponent(sciName)}', '${encodeURIComponent(popularName)}')">
       <span class="cr-score">${score}%</span>
       <div class="cr-sci">${sciName}</div>
@@ -104,11 +121,16 @@ function addPlantNetResult(cod, score, safeSci, safePop) {
   const popularName = decodeURIComponent(safePop);
   let p = null, isNewPlant = false;
 
+  // Dacă planta nu există în baza ta locală, o înregistrăm pe loc în sesiune
   if (cod === null) {
-    // Generăm cod temporar pentru plantele care NU sunt în Excel-ul tău
     const tempCod = Math.floor(Date.now() / 1000); 
     isNewPlant = true;
-    p = { cod: tempCod, stiintific: sciName, popular: popularName + " (PlantNet)", categorie: "Diverse (Identificare Cameră)" };
+    p = { 
+      cod: tempCod, 
+      stiintific: sciName, 
+      popular: popularName + " (PlantNet)", 
+      categorie: "Diverse (Identificare Cameră)" 
+    };
     PLANTE.push(p);
     cod = tempCod;
   } else {
@@ -119,6 +141,7 @@ function addPlantNetResult(cod, score, safeSci, safePop) {
   const toxic = typeof isToxic === 'function' ? isToxic(p.categorie) : false;
   const balast = typeof isBalast === 'function' ? isBalast(p.categorie) : false;
 
+  // Stabilire categorie destinație în fișă
   let target = camTarget;
   if (!target) {
     if (p.categorie.includes('Graminee')) target = 'gram';
@@ -127,8 +150,9 @@ function addPlantNetResult(cod, score, safeSci, safePop) {
     else target = 'div';
   }
 
+  // Prevenire dubluri
   if (fisaSpecii[target].find(s => s.cod === cod)) {
-    toast(`Această specie a fost deja adăugată.`);
+    toast(`Această specie a fost deja adăugată în această secțiune.`);
     closeCameraModal();
     return;
   }
@@ -139,6 +163,7 @@ function addPlantNetResult(cod, score, safeSci, safePop) {
   const parsedPct = pctRaw.trim() === '' ? '?' : parseFloat(pctRaw.replace(',', '.'));
   fisaSpecii[target].push({ cod, pct: isNaN(parsedPct) ? '?' : parsedPct });
   
+  // Re-randare chips-uri în interfață
   document.getElementById('chips-' + target).innerHTML = renderChips(target);
   closeCameraModal();
   toast(isNewPlant ? `✓ Specie nouă: ${p.stiintific}` : `✓ Cod ${cod} adăugat`);
